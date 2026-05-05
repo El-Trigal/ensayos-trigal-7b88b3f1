@@ -39,9 +39,19 @@ const Index = () => {
   const [cama, setCama] = useState<string>("");
 
   const load = async () => {
-    const { data, error } = await supabase.from("siembras").select("*").order("bloque").limit(5000);
-    if (error) toast.error(error.message);
-    else setData((data ?? []) as Siembra[]);
+    const all: Siembra[] = [];
+    const pageSize = 1000;
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await supabase
+        .from("siembras")
+        .select("*")
+        .order("bloque")
+        .range(from, from + pageSize - 1);
+      if (error) { toast.error(error.message); return; }
+      all.push(...((data ?? []) as Siembra[]));
+      if (!data || data.length < pageSize) break;
+    }
+    setData(all);
   };
 
   useEffect(() => {
