@@ -105,5 +105,15 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
   }
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer utilities {
+  .border-lapis { border-color: hsl(var(--lapis)); }
+  .bg-lapis { background-color: hsl(var(--lapis)); }
+  .text-lapis { color: hsl(var(--lapis)); }
 }
