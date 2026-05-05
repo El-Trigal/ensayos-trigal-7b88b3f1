@@ -204,6 +204,22 @@ const Index = () => {
               </select>
             </div>
           </div>
+          {(bloque || cama) && variedades.length > 0 && (
+            <div className="border-t-2 border-lapis p-8 flex items-start gap-8 bg-white">
+              <div className="shrink-0">
+                <span className="font-mono text-xs uppercase text-muted-foreground">A // Variedades</span>
+                <div className="mt-4 text-5xl font-extrabold tracking-tighter text-lapis">{variedades.length}</div>
+              </div>
+              <ul className="flex-1 border-l-2 border-lapis pl-6 space-y-1 font-mono text-xs text-lapis max-h-40 overflow-y-auto">
+                {variedades.map((v) => (
+                  <li key={v.nom} className="flex justify-between gap-4 border-b border-lapis/10 pb-1">
+                    <span className="font-bold truncate">{v.nom}</span>
+                    <span className="text-accent-orange shrink-0">{v.plantas.toLocaleString("es")}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {cama && (
             <div className="border-t-2 border-lapis p-8 grid grid-cols-1 md:grid-cols-2 gap-6 bg-lapis/5">
               <div>
@@ -243,23 +259,6 @@ const Index = () => {
         {/* Resultados */}
         {filtered.length > 0 ? (
           <>
-            <section className="border-2 border-lapis bg-white p-8 flex items-start gap-8">
-              <div className="shrink-0">
-                <span className="font-mono text-xs uppercase text-muted-foreground">A // Variedades</span>
-                <div className="mt-4 text-5xl font-extrabold tracking-tighter text-lapis">{variedades.length}</div>
-              </div>
-              {variedades.length > 0 && (
-                <ul className="flex-1 border-l-2 border-lapis pl-6 space-y-1 font-mono text-xs text-lapis max-h-40 overflow-y-auto">
-                  {variedades.map((v) => (
-                    <li key={v.nom} className="flex justify-between gap-4 border-b border-lapis/10 pb-1">
-                      <span className="font-bold truncate">{v.nom}</span>
-                      <span className="text-accent-orange shrink-0">{v.plantas.toLocaleString("es")}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
             <section className="border-2 border-lapis bg-white overflow-hidden">
               <div className="border-b-2 border-lapis p-4">
                 <span className="font-mono text-xs uppercase font-bold text-lapis">
