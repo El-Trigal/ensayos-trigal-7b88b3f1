@@ -41,6 +41,42 @@ export type Database = {
         }
         Relationships: []
       }
+      siembras: {
+        Row: {
+          bloque: number
+          cm: string
+          created_at: string
+          fecha: string | null
+          id: string
+          nom_flor: string
+          plantas: number
+          producto: string | null
+          semana: string | null
+        }
+        Insert: {
+          bloque: number
+          cm: string
+          created_at?: string
+          fecha?: string | null
+          id?: string
+          nom_flor: string
+          plantas?: number
+          producto?: string | null
+          semana?: string | null
+        }
+        Update: {
+          bloque?: number
+          cm?: string
+          created_at?: string
+          fecha?: string | null
+          id?: string
+          nom_flor?: string
+          plantas?: number
+          producto?: string | null
+          semana?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

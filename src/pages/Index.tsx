@@ -1,194 +1,290 @@
 import { useEffect, useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
-import { UploadZone } from "@/components/dashboard/UploadZone";
-import { StatBlock } from "@/components/dashboard/StatBlock";
-import { TrendChart, DistChart, PiePanel } from "@/components/dashboard/Charts";
-import { inferNumericColumns } from "@/lib/parseFile";
 import { toast } from "sonner";
 
-type Dataset = {
+type Siembra = {
   id: string;
-  name: string;
-  rows: Record<string, any>[];
-  columns: string[];
-  row_count: number;
-  created_at: string;
+  bloque: number;
+  cm: string;
+  semana: string | null;
+  fecha: string | null;
+  producto: string | null;
+  nom_flor: string;
+  plantas: number;
+};
+
+const parseExcelDate = (v: any): string | null => {
+  if (!v) return null;
+  if (typeof v === "number") {
+    const d = XLSX.SSF.parse_date_code(v);
+    if (!d) return null;
+    return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+  }
+  const s = String(v).trim();
+  // dd/mm/yy o dd/mm/yyyy
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (m) {
+    let [, d, mo, y] = m;
+    if (y.length === 2) y = "20" + y;
+    return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  return s;
 };
 
 const Index = () => {
-  const [datasets, setDatasets] = useState<Dataset[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [data, setData] = useState<Siembra[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [bloque, setBloque] = useState<string>("");
+  const [cama, setCama] = useState<string>("");
+
+  const load = async () => {
+    const { data, error } = await supabase.from("siembras").select("*").order("bloque").limit(5000);
+    if (error) toast.error(error.message);
+    else setData((data ?? []) as Siembra[]);
+  };
 
   useEffect(() => {
-    supabase.from("datasets").select("*").order("created_at", { ascending: false }).limit(20)
-      .then(({ data }) => {
-        if (data) {
-          setDatasets(data as any);
-          if (data[0]) setActiveId(data[0].id);
-        }
-      });
-    const channel = supabase.channel("datasets-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "datasets" }, (payload) => {
-        if (payload.eventType === "INSERT") {
-          setDatasets((d) => [payload.new as any, ...d]);
-          setActiveId((payload.new as any).id);
-        } else if (payload.eventType === "DELETE") {
-          setDatasets((d) => d.filter((x) => x.id !== (payload.old as any).id));
-        }
-      })
+    load();
+    const ch = supabase.channel("siembras-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "siembras" }, () => load())
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { supabase.removeChannel(ch); };
   }, []);
 
-  const active = useMemo(() => datasets.find((d) => d.id === activeId), [datasets, activeId]);
-  const numericCols = useMemo(() => active ? inferNumericColumns(active.rows, active.columns).filter(Boolean) : [], [active]);
-  const catCols = useMemo(() => active ? active.columns.filter((c) => !numericCols.includes(c)) : [], [active, numericCols]);
+  const handleFile = async (file: File) => {
+    setLoading(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<any>(ws, { defval: null });
+      if (!rows.length) throw new Error("Archivo vacío");
 
-  const stats = useMemo(() => {
-    if (!active) return null;
-    const numCol = numericCols[0];
-    const values = numCol ? active.rows.map((r) => Number(r[numCol])).filter((v) => !isNaN(v)) : [];
-    const sum = values.reduce((a, b) => a + b, 0);
-    const avg = values.length ? sum / values.length : 0;
-    return {
-      records: active.row_count.toLocaleString("es"),
-      cols: active.columns.length,
-      numCol,
-      sum: numCol ? sum.toLocaleString("es", { maximumFractionDigits: 0 }) : "—",
-      avg: numCol ? avg.toLocaleString("es", { maximumFractionDigits: 1 }) : "—",
-    };
-  }, [active, numericCols]);
+      const records = rows.map((r) => {
+        const norm: any = {};
+        Object.keys(r).forEach((k) => { norm[k.toLowerCase().trim()] = r[k]; });
+        return {
+          bloque: parseInt(String(norm.bloque)),
+          cm: String(norm.cm ?? "").trim(),
+          semana: norm.semana != null ? String(norm.semana) : null,
+          fecha: parseExcelDate(norm.fecha),
+          producto: norm.producto ? String(norm.producto) : null,
+          nom_flor: String(norm.nom_flor ?? norm["nom flor"] ?? "").trim(),
+          plantas: parseInt(String(norm.plantas)) || 0,
+        };
+      }).filter((r) => !isNaN(r.bloque) && r.cm && r.nom_flor);
 
-  const xKey = catCols[0] ?? active?.columns[0];
-  const yKey = numericCols[0];
-  const distKey = catCols[0] ?? active?.columns[0];
+      // Insertar por lotes
+      const chunkSize = 500;
+      for (let i = 0; i < records.length; i += chunkSize) {
+        const { error } = await supabase.from("siembras").insert(records.slice(i, i + chunkSize));
+        if (error) throw error;
+      }
+      toast.success(`${records.length} siembras cargadas`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const removeDataset = async (id: string) => {
-    const { error } = await supabase.from("datasets").delete().eq("id", id);
-    if (error) toast.error(error.message); else toast.success("Eliminado");
+  const bloques = useMemo(() => Array.from(new Set(data.map((d) => d.bloque))).sort((a, b) => a - b), [data]);
+  const camasDisponibles = useMemo(() => {
+    const filtered = bloque ? data.filter((d) => d.bloque === Number(bloque)) : data;
+    return Array.from(new Set(filtered.map((d) => d.cm))).sort();
+  }, [data, bloque]);
+
+  const filtered = useMemo(() => {
+    return data.filter((d) =>
+      (!bloque || d.bloque === Number(bloque)) &&
+      (!cama || d.cm === cama)
+    );
+  }, [data, bloque, cama]);
+
+  const variedades = useMemo(() => {
+    const m = new Map<string, { plantas: number; siembras: number }>();
+    filtered.forEach((r) => {
+      const cur = m.get(r.nom_flor) ?? { plantas: 0, siembras: 0 };
+      cur.plantas += r.plantas;
+      cur.siembras += 1;
+      m.set(r.nom_flor, cur);
+    });
+    return Array.from(m.entries()).map(([nom, v]) => ({ nom, ...v })).sort((a, b) => b.plantas - a.plantas);
+  }, [filtered]);
+
+  const totalPlantas = filtered.reduce((a, b) => a + b.plantas, 0);
+
+  const limpiarTodo = async () => {
+    if (!confirm("¿Eliminar TODAS las siembras de la base de datos?")) return;
+    const { error } = await supabase.from("siembras").delete().not("id", "is", null);
+    if (error) toast.error(error.message); else toast.success("Base de datos limpiada");
   };
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6 md:p-12">
-      <nav className="max-w-7xl mx-auto flex justify-between items-end border-b-2 border-lapis pb-6 mb-12">
+      <nav className="max-w-7xl mx-auto flex flex-wrap gap-4 justify-between items-end border-b-2 border-lapis pb-6 mb-12">
         <div>
-          <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Sistema de Análisis v1.0</span>
+          <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Sistema de Siembras v1.0</span>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter uppercase text-lapis">DATA_ESTRUCTURA</h1>
         </div>
-        <div className="hidden md:flex gap-8 font-mono text-xs uppercase">
-          <span className="text-muted-foreground">Estado:</span>
-          <span className="text-accent-orange">● Tiempo Real</span>
+        <div className="flex gap-6 font-mono text-xs uppercase">
+          <span className="text-muted-foreground">Total registros:</span>
+          <span className="text-accent-orange">{data.length.toLocaleString("es")}</span>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto space-y-8">
-        <UploadZone />
-
-        {datasets.length > 0 && (
-          <div className="border-2 border-lapis bg-white p-4 flex gap-2 overflow-x-auto">
-            {datasets.map((d) => (
-              <button key={d.id} onClick={() => setActiveId(d.id)}
-                className={`shrink-0 px-4 py-2 font-mono text-xs uppercase border-2 border-lapis transition-colors ${activeId === d.id ? "bg-lapis text-background" : "bg-white text-lapis hover:bg-lapis/10"}`}>
-                {d.name} <span className="opacity-60">({d.row_count})</span>
-                <span onClick={(e) => { e.stopPropagation(); removeDataset(d.id); }} className="ml-3 hover:text-accent-orange">×</span>
+        {/* Carga */}
+        <section className="border-2 border-lapis bg-white">
+          <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
+            <span className="font-mono text-xs uppercase font-bold text-lapis">01 // Cargar Inventario de Siembras</span>
+            {data.length > 0 && (
+              <button onClick={limpiarTodo} className="font-mono text-xs uppercase text-accent-orange hover:underline">
+                Limpiar base
               </button>
-            ))}
+            )}
           </div>
-        )}
+          <div className="p-8">
+            <label className="block">
+              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3 block">
+                Archivo de siembra (.xlsx) — columnas: bloque, cm, semana, fecha, producto, nom_flor, plantas
+              </span>
+              <div className="border-2 border-dashed border-lapis hover:border-accent-orange transition-colors p-8 text-center cursor-pointer">
+                <input type="file" accept=".xlsx,.xls,.csv" className="hidden" id="file-input"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+                <label htmlFor="file-input" className="cursor-pointer block">
+                  <p className="text-xl font-bold tracking-tight text-lapis mb-2">
+                    {loading ? "Procesando…" : "Arrastrar o seleccionar archivo"}
+                  </p>
+                  <span className="font-mono text-xs text-muted-foreground">.xlsx · .xls · .csv</span>
+                </label>
+              </div>
+            </label>
+          </div>
+        </section>
 
-        {active && stats && (
+        {/* Consulta */}
+        <section className="border-2 border-lapis bg-white">
+          <div className="border-b-2 border-lapis p-4">
+            <span className="font-mono text-xs uppercase font-bold text-lapis">02 // Consulta por Bloque y Cama</span>
+          </div>
+          <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Bloque</label>
+              <select value={bloque} onChange={(e) => { setBloque(e.target.value); setCama(""); }}
+                className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
+                <option value="">— Todos —</option>
+                {bloques.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Cama (cm)</label>
+              <select value={cama} onChange={(e) => setCama(e.target.value)}
+                className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
+                <option value="">— Todas —</option>
+                {camasDisponibles.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+        </section>
+
+        {/* Resultados */}
+        {filtered.length > 0 ? (
           <>
             <section className="grid grid-cols-1 md:grid-cols-3 border-2 border-lapis">
-              <StatBlock index="01" label="Registros" value={stats.records} />
-              <StatBlock index="02" label="Columnas" value={String(stats.cols)} />
-              <StatBlock index="03" label={stats.numCol ? `Suma ${stats.numCol}` : "Suma"} value={stats.sum} />
-            </section>
-
-            <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 border-2 border-lapis bg-white">
-                <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
-                  <span className="font-mono text-xs uppercase font-bold text-lapis">
-                    {yKey ? `Tendencia · ${yKey}` : "Sin columnas numéricas"}
-                  </span>
-                  <div className="flex gap-2">
-                    <div className="w-3 h-3 bg-lapis"></div>
-                    <div className="w-3 h-3 bg-accent-orange"></div>
-                  </div>
-                </div>
-                <div className="p-4">
-                  {xKey && yKey ? <TrendChart rows={active.rows} xKey={xKey} yKey={yKey} /> :
-                    <div className="h-[280px] flex items-center justify-center font-mono text-xs text-muted-foreground">No se detectaron columnas numéricas</div>}
-                </div>
+              <div className="p-8 bg-white border-b-2 md:border-b-0 md:border-r-2 border-lapis">
+                <span className="font-mono text-xs uppercase text-muted-foreground">A // Variedades</span>
+                <div className="mt-4 text-5xl font-extrabold tracking-tighter text-lapis">{variedades.length}</div>
               </div>
-
-              <aside className="border-2 border-lapis bg-lapis text-background p-6">
-                <h3 className="font-mono text-xs uppercase tracking-widest mb-6 border-b border-background/20 pb-2">Esquema Detectado</h3>
-                <ul className="space-y-3 font-mono text-xs max-h-[280px] overflow-y-auto">
-                  {active.columns.map((c) => (
-                    <li key={c} className="flex justify-between gap-3">
-                      <span className="text-background/60 truncate">{c}</span>
-                      <span className={numericCols.includes(c) ? "text-accent-orange" : ""}>
-                        {numericCols.includes(c) ? "NUM" : "STR"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </aside>
-            </section>
-
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="border-2 border-lapis bg-white">
-                <div className="border-b-2 border-lapis p-4">
-                  <span className="font-mono text-xs uppercase font-bold text-lapis">
-                    {distKey ? `Distribución · ${distKey}` : "Distribución"}
-                  </span>
-                </div>
-                <div className="p-4">
-                  {distKey && <DistChart rows={active.rows} key1={distKey} />}
-                </div>
+              <div className="p-8 bg-white border-b-2 md:border-b-0 md:border-r-2 border-lapis">
+                <span className="font-mono text-xs uppercase text-muted-foreground">B // Total Plantas</span>
+                <div className="mt-4 text-5xl font-extrabold tracking-tighter text-lapis">{totalPlantas.toLocaleString("es")}</div>
               </div>
-              <div className="border-2 border-lapis bg-white">
-                <div className="border-b-2 border-lapis p-4">
-                  <span className="font-mono text-xs uppercase font-bold text-lapis">Composición</span>
-                </div>
-                <div className="p-4">
-                  {distKey && <PiePanel rows={active.rows} key1={distKey} />}
-                </div>
+              <div className="p-8 bg-lapis text-background">
+                <span className="font-mono text-xs uppercase text-background/60">C // Siembras</span>
+                <div className="mt-4 text-5xl font-extrabold tracking-tighter">{filtered.length}</div>
               </div>
             </section>
 
             <section className="border-2 border-lapis bg-white overflow-hidden">
-              <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
-                <span className="font-mono text-xs uppercase font-bold text-lapis">Vista Previa · primeras 20 filas</span>
-                <span className="font-mono text-xs text-muted-foreground">{active.row_count.toLocaleString("es")} totales</span>
+              <div className="border-b-2 border-lapis p-4">
+                <span className="font-mono text-xs uppercase font-bold text-lapis">
+                  Variedades sembradas {bloque && `· Bloque ${bloque}`} {cama && `· Cama ${cama}`}
+                </span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full font-mono text-xs">
                   <thead className="bg-lapis text-background">
-                    <tr>{active.columns.map((c) => <th key={c} className="text-left p-3 uppercase tracking-tight">{c}</th>)}</tr>
+                    <tr>
+                      <th className="text-left p-3 uppercase tracking-tight">Variedad</th>
+                      <th className="text-right p-3 uppercase tracking-tight">Siembras</th>
+                      <th className="text-right p-3 uppercase tracking-tight">Plantas</th>
+                      <th className="text-right p-3 uppercase tracking-tight">% del total</th>
+                    </tr>
                   </thead>
                   <tbody>
-                    {active.rows.slice(0, 20).map((r, i) => (
-                      <tr key={i} className="border-b border-lapis/10 hover:bg-lapis/5">
-                        {active.columns.map((c) => <td key={c} className="p-3 truncate max-w-[200px]">{String(r[c] ?? "")}</td>)}
+                    {variedades.map((v) => (
+                      <tr key={v.nom} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                        <td className="p-3 font-bold text-lapis">{v.nom}</td>
+                        <td className="p-3 text-right">{v.siembras}</td>
+                        <td className="p-3 text-right text-accent-orange font-bold">{v.plantas.toLocaleString("es")}</td>
+                        <td className="p-3 text-right">{((v.plantas / totalPlantas) * 100).toFixed(1)}%</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </section>
-          </>
-        )}
 
-        {!active && (
+            <section className="border-2 border-lapis bg-white overflow-hidden">
+              <div className="border-b-2 border-lapis p-4">
+                <span className="font-mono text-xs uppercase font-bold text-lapis">Detalle de siembras</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full font-mono text-xs">
+                  <thead className="bg-lapis text-background">
+                    <tr>
+                      <th className="text-left p-3 uppercase">Bloque</th>
+                      <th className="text-left p-3 uppercase">Cama</th>
+                      <th className="text-left p-3 uppercase">Semana</th>
+                      <th className="text-left p-3 uppercase">Fecha</th>
+                      <th className="text-left p-3 uppercase">Producto</th>
+                      <th className="text-left p-3 uppercase">Variedad</th>
+                      <th className="text-right p-3 uppercase">Plantas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.slice(0, 200).map((r) => (
+                      <tr key={r.id} className="border-b border-lapis/10 hover:bg-lapis/5">
+                        <td className="p-3 font-bold">{r.bloque}</td>
+                        <td className="p-3">{r.cm}</td>
+                        <td className="p-3">{r.semana}</td>
+                        <td className="p-3">{r.fecha}</td>
+                        <td className="p-3">{r.producto}</td>
+                        <td className="p-3 text-lapis">{r.nom_flor}</td>
+                        <td className="p-3 text-right text-accent-orange font-bold">{r.plantas.toLocaleString("es")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {filtered.length > 200 && (
+                  <div className="p-3 font-mono text-xs text-muted-foreground text-center border-t-2 border-lapis/10">
+                    Mostrando 200 de {filtered.length} registros
+                  </div>
+                )}
+              </div>
+            </section>
+          </>
+        ) : (
           <div className="border-2 border-dashed border-lapis/30 p-12 text-center font-mono text-sm text-muted-foreground">
-            Aún no hay datos cargados. Suelte un archivo arriba para comenzar.
+            {data.length === 0 ? "Sin datos. Sube un archivo Excel para comenzar." : "Sin resultados con esos filtros."}
           </div>
         )}
       </main>
 
       <footer className="max-w-7xl mx-auto mt-24 pt-8 border-t-2 border-lapis flex justify-between items-center font-mono text-xs text-muted-foreground">
-        <span>DATA_ESTRUCTURA · Análisis en tiempo real</span>
+        <span>DATA_ESTRUCTURA · Siembras en tiempo real</span>
         <span>Lapislázuli Edition</span>
       </footer>
     </div>
