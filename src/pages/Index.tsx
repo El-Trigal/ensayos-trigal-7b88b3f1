@@ -219,7 +219,7 @@ const Index = () => {
                   className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
               </div>
               {(nParcelas > 0 && nPlantasParc > 0) && (
-                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 border-2 border-lapis bg-white">
+                <div className="md:col-span-2 grid grid-cols-3 border-2 border-lapis bg-white">
                   <div className="p-6 border-r-2 border-lapis">
                     <span className="font-mono text-xs uppercase text-muted-foreground">Total cama</span>
                     <div className="mt-2 text-3xl font-extrabold tracking-tighter text-lapis">{totalPlantas.toLocaleString("es")}</div>
