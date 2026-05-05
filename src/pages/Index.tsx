@@ -43,6 +43,8 @@ const Index = () => {
   const [tratamiento, setTratamiento] = useState<string>("");
   const [ramos, setRamos] = useState<string>("");
   const [tallosPorRamo, setTallosPorRamo] = useState<string>("");
+  type Registro = { id: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; fecha: string };
+  const [registros, setRegistros] = useState<Registro[]>([]);
 
   const load = async () => {
     const all: Siembra[] = [];
@@ -139,6 +141,39 @@ const Index = () => {
   const nRamos = parseInt(ramos) || 0;
   const nTallos = parseInt(tallosPorRamo) || 0;
   const totalTallos = nRamos * nTallos;
+
+  const acumulados = useMemo(() => {
+    const m = new Map<string, { parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; n: number }>();
+    registros.forEach((r) => {
+      const key = `${r.parcela}||${r.tratamiento}`;
+      const cur = m.get(key) ?? { parcela: r.parcela, tratamiento: r.tratamiento, ramos: 0, tallos: 0, total: 0, n: 0 };
+      cur.ramos += r.ramos;
+      cur.tallos += r.tallos;
+      cur.total += r.total;
+      cur.n += 1;
+      m.set(key, cur);
+    });
+    return Array.from(m.values()).sort((a, b) => Number(a.parcela) - Number(b.parcela));
+  }, [registros]);
+
+  const añadirRegistro = () => {
+    if (!parcelaSel || !tratamiento.trim() || nRamos <= 0 || nTallos <= 0) return;
+    setRegistros((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        parcela: parcelaSel,
+        tratamiento: tratamiento.trim(),
+        ramos: nRamos,
+        tallos: nTallos,
+        total: nRamos * nTallos,
+        fecha: new Date().toISOString(),
+      },
+    ]);
+    setRamos("");
+    setTallosPorRamo("");
+    toast.success("Registro añadido");
+  };
 
   const limpiarTodo = async () => {
     if (!confirm("¿Eliminar TODAS las siembras de la base de datos?")) return;
@@ -264,11 +299,11 @@ const Index = () => {
           )}
         </section>
 
-        {/* Aprovechamiento */}
+        {/* Productividad */}
         {cama && nParcelas > 0 && (
           <section className="border-2 border-lapis bg-white">
             <div className="border-b-2 border-lapis p-4">
-              <span className="font-mono text-xs uppercase font-bold text-lapis">03 // Aprovechamiento</span>
+              <span className="font-mono text-xs uppercase font-bold text-lapis">03 // Productividad</span>
             </div>
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -302,17 +337,55 @@ const Index = () => {
                       className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
                   </div>
                   {nRamos > 0 && nTallos > 0 && (
-                    <div className="md:col-span-2 border-2 border-lapis bg-accent-orange/10 p-6 flex items-center justify-between">
+                    <div className="md:col-span-2 border-2 border-lapis bg-accent-orange/10 p-6 flex items-center justify-between gap-4 flex-wrap">
                       <div>
-                        <span className="font-mono text-xs uppercase text-muted-foreground">Total de tallos</span>
+                        <span className="font-mono text-xs uppercase text-muted-foreground">Tallos en este registro</span>
                         <div className="mt-2 text-4xl font-extrabold tracking-tighter text-accent-orange">{totalTallos.toLocaleString("es")}</div>
                         <span className="font-mono text-[10px] text-muted-foreground">{nRamos} ramos × {nTallos} tallos · Parcela {parcelaSel} · {tratamiento}</span>
                       </div>
+                      <button
+                        onClick={añadirRegistro}
+                        className="font-mono text-xs uppercase tracking-widest bg-lapis text-background px-6 py-3 hover:bg-accent-orange transition-colors"
+                      >
+                        Añadir
+                      </button>
                     </div>
                   )}
                 </>
               )}
             </div>
+            {acumulados.length > 0 && (
+              <div className="border-t-2 border-lapis">
+                <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
+                  <span className="font-mono text-xs uppercase font-bold text-lapis">Acumulado por parcela y tratamiento</span>
+                  <button onClick={() => setRegistros([])} className="font-mono text-xs uppercase text-accent-orange hover:underline">
+                    Limpiar
+                  </button>
+                </div>
+                <table className="w-full font-mono text-xs">
+                  <thead className="bg-lapis text-background">
+                    <tr>
+                      <th className="text-left p-3 uppercase">Parcela</th>
+                      <th className="text-left p-3 uppercase">Tratamiento</th>
+                      <th className="text-right p-3 uppercase">Registros</th>
+                      <th className="text-right p-3 uppercase">Ramos</th>
+                      <th className="text-right p-3 uppercase">Total tallos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {acumulados.map((a) => (
+                      <tr key={`${a.parcela}-${a.tratamiento}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                        <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td>
+                        <td className="p-3 text-lapis">{a.tratamiento}</td>
+                        <td className="p-3 text-right">{a.n}</td>
+                        <td className="p-3 text-right">{a.ramos.toLocaleString("es")}</td>
+                        <td className="p-3 text-right text-accent-orange font-bold">{a.total.toLocaleString("es")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
         )}
 
