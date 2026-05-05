@@ -8,35 +8,39 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Industrial Suizo - Lapislázuli edition */
+    --background: 47 18% 94%;        /* #F2F2EE off-white */
+    --foreground: 220 65% 18%;       /* lapis lazuli deep blue */
+    --lapis: 220 65% 22%;
+    --lapis-deep: 220 70% 14%;
+    --accent-orange: 18 100% 50%;    /* #FF4D00 */
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 65% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 65% 18%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 220 65% 22%;
+    --primary-foreground: 47 18% 94%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 47 18% 88%;
+    --secondary-foreground: 220 65% 18%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 47 12% 86%;
+    --muted-foreground: 220 15% 40%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 18 100% 50%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 220 65% 18%;
+    --input: 220 65% 18%;
+    --ring: 220 65% 22%;
 
-    --radius: 0.5rem;
+    --radius: 0;
 
     --sidebar-background: 0 0% 98%;
 
@@ -101,5 +105,15 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
   }
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer utilities {
+  .border-lapis { border-color: hsl(var(--lapis)); }
+  .bg-lapis { background-color: hsl(var(--lapis)); }
+  .text-lapis { color: hsl(var(--lapis)); }
 }
