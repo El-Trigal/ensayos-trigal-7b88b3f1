@@ -243,17 +243,23 @@ const Index = () => {
         {/* Resultados */}
         {filtered.length > 0 ? (
           <>
-            <section className="grid grid-cols-1 md:grid-cols-3 border-2 border-lapis">
+            <section className="grid grid-cols-1 md:grid-cols-2 border-2 border-lapis">
               <div className="p-8 bg-white border-b-2 md:border-b-0 md:border-r-2 border-lapis">
                 <span className="font-mono text-xs uppercase text-muted-foreground">A // Variedades</span>
                 <div className="mt-4 text-5xl font-extrabold tracking-tighter text-lapis">{variedades.length}</div>
-              </div>
-              <div className="p-8 bg-white border-b-2 md:border-b-0 md:border-r-2 border-lapis">
-                <span className="font-mono text-xs uppercase text-muted-foreground">B // Total Plantas</span>
-                <div className="mt-4 text-5xl font-extrabold tracking-tighter text-lapis">{totalPlantas.toLocaleString("es")}</div>
+                {variedades.length > 0 && (
+                  <ul className="mt-4 space-y-1 font-mono text-xs text-lapis max-h-40 overflow-y-auto">
+                    {variedades.map((v) => (
+                      <li key={v.nom} className="flex justify-between gap-4 border-b border-lapis/10 pb-1">
+                        <span className="font-bold truncate">{v.nom}</span>
+                        <span className="text-accent-orange shrink-0">{v.plantas.toLocaleString("es")}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
               <div className="p-8 bg-lapis text-background">
-                <span className="font-mono text-xs uppercase text-background/60">C // Siembras</span>
+                <span className="font-mono text-xs uppercase text-background/60">B // Siembras</span>
                 <div className="mt-4 text-5xl font-extrabold tracking-tighter">{filtered.length}</div>
               </div>
             </section>
