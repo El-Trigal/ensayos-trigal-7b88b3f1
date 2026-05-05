@@ -43,7 +43,8 @@ const Index = () => {
   const [tratamiento, setTratamiento] = useState<string>("");
   const [ramos, setRamos] = useState<string>("");
   const [tallosPorRamo, setTallosPorRamo] = useState<string>("");
-  type Registro = { id: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; fecha: string };
+  const [variedadSel, setVariedadSel] = useState<string>("");
+  type Registro = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; fecha: string };
   const [registros, setRegistros] = useState<Registro[]>([]);
 
   const load = async () => {
@@ -143,25 +144,29 @@ const Index = () => {
   const totalTallos = nRamos * nTallos;
 
   const acumulados = useMemo(() => {
-    const m = new Map<string, { parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; n: number }>();
+    const m = new Map<string, { cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; n: number }>();
     registros.forEach((r) => {
-      const key = `${r.parcela}||${r.tratamiento}`;
-      const cur = m.get(key) ?? { parcela: r.parcela, tratamiento: r.tratamiento, ramos: 0, tallos: 0, total: 0, n: 0 };
+      const key = `${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}`;
+      const cur = m.get(key) ?? { cama: r.cama, variedad: r.variedad, parcela: r.parcela, tratamiento: r.tratamiento, ramos: 0, tallos: 0, total: 0, n: 0 };
       cur.ramos += r.ramos;
       cur.tallos += r.tallos;
       cur.total += r.total;
       cur.n += 1;
       m.set(key, cur);
     });
-    return Array.from(m.values()).sort((a, b) => Number(a.parcela) - Number(b.parcela));
+    return Array.from(m.values()).sort((a, b) =>
+      a.cama.localeCompare(b.cama) || a.variedad.localeCompare(b.variedad) || Number(a.parcela) - Number(b.parcela)
+    );
   }, [registros]);
 
   const añadirRegistro = () => {
-    if (!parcelaSel || !tratamiento.trim() || nRamos <= 0 || nTallos <= 0) return;
+    if (!cama || !variedadSel || !parcelaSel || !tratamiento.trim() || nRamos <= 0 || nTallos <= 0) return;
     setRegistros((prev) => [
       ...prev,
       {
         id: crypto.randomUUID(),
+        cama,
+        variedad: variedadSel,
         parcela: parcelaSel,
         tratamiento: tratamiento.trim(),
         ramos: nRamos,
@@ -307,6 +312,14 @@ const Index = () => {
             </div>
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Variedad</label>
+                <select value={variedadSel} onChange={(e) => setVariedadSel(e.target.value)}
+                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
+                  <option value="">— Selecciona —</option>
+                  {variedades.map((v) => <option key={v.nom} value={v.nom}>{v.nom}</option>)}
+                </select>
+              </div>
+              <div>
                 <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Parcela</label>
                 <select value={parcelaSel} onChange={(e) => setParcelaSel(e.target.value)}
                   className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
@@ -322,7 +335,7 @@ const Index = () => {
                   placeholder="Nombre del tratamiento"
                   className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
               </div>
-              {parcelaSel && tratamiento.trim() && (
+              {variedadSel && parcelaSel && tratamiento.trim() && (
                 <>
                   <div>
                     <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">N° de ramos</label>
@@ -341,7 +354,7 @@ const Index = () => {
                       <div>
                         <span className="font-mono text-xs uppercase text-muted-foreground">Tallos en este registro</span>
                         <div className="mt-2 text-4xl font-extrabold tracking-tighter text-accent-orange">{totalTallos.toLocaleString("es")}</div>
-                        <span className="font-mono text-[10px] text-muted-foreground">{nRamos} ramos × {nTallos} tallos · Parcela {parcelaSel} · {tratamiento}</span>
+                        <span className="font-mono text-[10px] text-muted-foreground">{nRamos} ramos × {nTallos} tallos · Cama {cama} · {variedadSel} · Parcela {parcelaSel} · {tratamiento}</span>
                       </div>
                       <button
                         onClick={añadirRegistro}
@@ -357,14 +370,17 @@ const Index = () => {
             {acumulados.length > 0 && (
               <div className="border-t-2 border-lapis">
                 <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
-                  <span className="font-mono text-xs uppercase font-bold text-lapis">Acumulado por parcela y tratamiento</span>
+                  <span className="font-mono text-xs uppercase font-bold text-lapis">Acumulado por cama, variedad, parcela y tratamiento</span>
                   <button onClick={() => setRegistros([])} className="font-mono text-xs uppercase text-accent-orange hover:underline">
                     Limpiar
                   </button>
                 </div>
+                <div className="overflow-x-auto">
                 <table className="w-full font-mono text-xs">
                   <thead className="bg-lapis text-background">
                     <tr>
+                      <th className="text-left p-3 uppercase">Cama</th>
+                      <th className="text-left p-3 uppercase">Variedad</th>
                       <th className="text-left p-3 uppercase">Parcela</th>
                       <th className="text-left p-3 uppercase">Tratamiento</th>
                       <th className="text-right p-3 uppercase">Registros</th>
@@ -374,7 +390,9 @@ const Index = () => {
                   </thead>
                   <tbody>
                     {acumulados.map((a) => (
-                      <tr key={`${a.parcela}-${a.tratamiento}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                      <tr key={`${a.cama}-${a.variedad}-${a.parcela}-${a.tratamiento}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                        <td className="p-3 font-bold text-lapis">{a.cama}</td>
+                        <td className="p-3 text-lapis">{a.variedad}</td>
                         <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td>
                         <td className="p-3 text-lapis">{a.tratamiento}</td>
                         <td className="p-3 text-right">{a.n}</td>
@@ -384,6 +402,7 @@ const Index = () => {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )}
           </section>
