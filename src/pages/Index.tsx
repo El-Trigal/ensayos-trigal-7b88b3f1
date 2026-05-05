@@ -37,6 +37,8 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const [bloque, setBloque] = useState<string>("");
   const [cama, setCama] = useState<string>("");
+  const [parcelas, setParcelas] = useState<string>("");
+  const [plantasPorParcela, setPlantasPorParcela] = useState<string>("");
 
   const load = async () => {
     const all: Siembra[] = [];
@@ -125,6 +127,11 @@ const Index = () => {
 
   const totalPlantas = filtered.reduce((a, b) => a + b.plantas, 0);
 
+  const nParcelas = parseInt(parcelas) || 0;
+  const nPlantasParc = parseInt(plantasPorParcela) || 0;
+  const plantasExperimento = nParcelas * nPlantasParc;
+  const efectoBorde = Math.max(totalPlantas - plantasExperimento, 0);
+
   const limpiarTodo = async () => {
     if (!confirm("¿Eliminar TODAS las siembras de la base de datos?")) return;
     const { error } = await supabase.from("siembras").delete().not("id", "is", null);
@@ -197,6 +204,40 @@ const Index = () => {
               </select>
             </div>
           </div>
+          {cama && (
+            <div className="border-t-2 border-lapis p-8 grid grid-cols-1 md:grid-cols-2 gap-6 bg-lapis/5">
+              <div>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Parcelas</label>
+                <input type="number" min="0" value={parcelas} onChange={(e) => setParcelas(e.target.value)}
+                  placeholder="N° de parcelas"
+                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+              </div>
+              <div>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Plantas por parcela</label>
+                <input type="number" min="0" value={plantasPorParcela} onChange={(e) => setPlantasPorParcela(e.target.value)}
+                  placeholder="Plantas / parcela"
+                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+              </div>
+              {(nParcelas > 0 && nPlantasParc > 0) && (
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 border-2 border-lapis bg-white">
+                  <div className="p-6 border-r-2 border-lapis">
+                    <span className="font-mono text-xs uppercase text-muted-foreground">Total cama</span>
+                    <div className="mt-2 text-3xl font-extrabold tracking-tighter text-lapis">{totalPlantas.toLocaleString("es")}</div>
+                  </div>
+                  <div className="p-6 border-r-2 border-lapis">
+                    <span className="font-mono text-xs uppercase text-muted-foreground">Experimento</span>
+                    <div className="mt-2 text-3xl font-extrabold tracking-tighter text-lapis">{plantasExperimento.toLocaleString("es")}</div>
+                    <span className="font-mono text-[10px] text-muted-foreground">{nParcelas} × {nPlantasParc}</span>
+                  </div>
+                  <div className="p-6 bg-accent-orange/10">
+                    <span className="font-mono text-xs uppercase text-muted-foreground">Efecto borde</span>
+                    <div className="mt-2 text-3xl font-extrabold tracking-tighter text-accent-orange">{efectoBorde.toLocaleString("es")}</div>
+                    <span className="font-mono text-[10px] text-muted-foreground">{totalPlantas > 0 ? ((efectoBorde / totalPlantas) * 100).toFixed(1) : 0}% del total</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         {/* Resultados */}
