@@ -39,6 +39,10 @@ const Index = () => {
   const [cama, setCama] = useState<string>("");
   const [parcelas, setParcelas] = useState<string>("");
   const [plantasPorParcela, setPlantasPorParcela] = useState<string>("");
+  const [parcelaSel, setParcelaSel] = useState<string>("");
+  const [tratamiento, setTratamiento] = useState<string>("");
+  const [ramos, setRamos] = useState<string>("");
+  const [tallosPorRamo, setTallosPorRamo] = useState<string>("");
 
   const load = async () => {
     const all: Siembra[] = [];
@@ -131,6 +135,10 @@ const Index = () => {
   const nPlantasParc = parseInt(plantasPorParcela) || 0;
   const plantasExperimento = nParcelas * nPlantasParc;
   const efectoBorde = Math.max(totalPlantas - plantasExperimento, 0);
+
+  const nRamos = parseInt(ramos) || 0;
+  const nTallos = parseInt(tallosPorRamo) || 0;
+  const totalTallos = nRamos * nTallos;
 
   const limpiarTodo = async () => {
     if (!confirm("¿Eliminar TODAS las siembras de la base de datos?")) return;
@@ -255,6 +263,58 @@ const Index = () => {
             </div>
           )}
         </section>
+
+        {/* Aprovechamiento */}
+        {cama && nParcelas > 0 && (
+          <section className="border-2 border-lapis bg-white">
+            <div className="border-b-2 border-lapis p-4">
+              <span className="font-mono text-xs uppercase font-bold text-lapis">03 // Aprovechamiento</span>
+            </div>
+            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Parcela</label>
+                <select value={parcelaSel} onChange={(e) => setParcelaSel(e.target.value)}
+                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
+                  <option value="">— Selecciona —</option>
+                  {Array.from({ length: nParcelas }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>Parcela {n}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Tratamiento</label>
+                <input type="text" value={tratamiento} onChange={(e) => setTratamiento(e.target.value)}
+                  placeholder="Nombre del tratamiento"
+                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+              </div>
+              {parcelaSel && tratamiento.trim() && (
+                <>
+                  <div>
+                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">N° de ramos</label>
+                    <input type="number" min="0" value={ramos} onChange={(e) => setRamos(e.target.value)}
+                      placeholder="Cantidad de ramos"
+                      className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+                  </div>
+                  <div>
+                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">N° de tallos por ramo</label>
+                    <input type="number" min="0" value={tallosPorRamo} onChange={(e) => setTallosPorRamo(e.target.value)}
+                      placeholder="Tallos / ramo"
+                      className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+                  </div>
+                  {nRamos > 0 && nTallos > 0 && (
+                    <div className="md:col-span-2 border-2 border-lapis bg-accent-orange/10 p-6 flex items-center justify-between">
+                      <div>
+                        <span className="font-mono text-xs uppercase text-muted-foreground">Total de tallos</span>
+                        <div className="mt-2 text-4xl font-extrabold tracking-tighter text-accent-orange">{totalTallos.toLocaleString("es")}</div>
+                        <span className="font-mono text-[10px] text-muted-foreground">{nRamos} ramos × {nTallos} tallos · Parcela {parcelaSel} · {tratamiento}</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* Resultados */}
         {filtered.length > 0 ? (
