@@ -41,6 +41,75 @@ export type Database = {
         }
         Relationships: []
       }
+      perdidas: {
+        Row: {
+          cama: string
+          causa: string
+          created_at: string
+          id: string
+          parcela: string
+          tallos: number
+          tratamiento: string
+          variedad: string
+        }
+        Insert: {
+          cama: string
+          causa: string
+          created_at?: string
+          id?: string
+          parcela: string
+          tallos?: number
+          tratamiento: string
+          variedad: string
+        }
+        Update: {
+          cama?: string
+          causa?: string
+          created_at?: string
+          id?: string
+          parcela?: string
+          tallos?: number
+          tratamiento?: string
+          variedad?: string
+        }
+        Relationships: []
+      }
+      productividad: {
+        Row: {
+          cama: string
+          created_at: string
+          id: string
+          parcela: string
+          ramos: number
+          tallos_por_ramo: number
+          total: number
+          tratamiento: string
+          variedad: string
+        }
+        Insert: {
+          cama: string
+          created_at?: string
+          id?: string
+          parcela: string
+          ramos?: number
+          tallos_por_ramo?: number
+          total?: number
+          tratamiento: string
+          variedad: string
+        }
+        Update: {
+          cama?: string
+          created_at?: string
+          id?: string
+          parcela?: string
+          ramos?: number
+          tallos_por_ramo?: number
+          total?: number
+          tratamiento?: string
+          variedad?: string
+        }
+        Relationships: []
+      }
       siembras: {
         Row: {
           bloque: number

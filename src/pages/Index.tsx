@@ -35,6 +35,7 @@ const parseExcelDate = (v: any): string | null => {
 const Index = () => {
   const [data, setData] = useState<Siembra[]>([]);
   const [loading, setLoading] = useState(false);
+  const [vista, setVista] = useState<"inventario" | "registros">("inventario");
   const [bloque, setBloque] = useState<string>("");
   const [cama, setCama] = useState<string>("");
   const [parcelas, setParcelas] = useState<string>("");
@@ -48,7 +49,7 @@ const Index = () => {
   const [registros, setRegistros] = useState<Registro[]>([]);
 
   // Pérdidas
-  const CAUSAS = ["Botón corona", "Botrytis", "Compuesto", "Daño mecanico", "Delgados", "Espiga corta", "Flor Abierta", "Malformación", "Mezcla", "Mutación"] as const;
+  const CAUSAS = ["Botón corona", "Botrytis", "Compuesto", "Daño mecanico", "Delgados", "Espiga corta", "Flor Abierta", "Malformación", "Mezcla", "Mutación", "Pocos puntos", "Secadera", "Tallos cortos", "Torcidos", "Vegetativo"] as const;
   const [pVariedadSel, setPVariedadSel] = useState<string>("");
   const [pParcelaSel, setPParcelaSel] = useState<string>("");
   const [pTratamiento, setPTratamiento] = useState<string>("");
@@ -77,6 +78,31 @@ const Index = () => {
     load();
     const ch = supabase.channel("siembras-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "siembras" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
+  const loadRegistros = async () => {
+    const [{ data: prod }, { data: perd }] = await Promise.all([
+      supabase.from("productividad").select("*").order("created_at", { ascending: false }),
+      supabase.from("perdidas").select("*").order("created_at", { ascending: false }),
+    ]);
+    if (prod) setRegistros(prod.map((r: any) => ({
+      id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
+      tratamiento: r.tratamiento, ramos: r.ramos, tallos: r.tallos_por_ramo,
+      total: r.total, fecha: r.created_at,
+    })));
+    if (perd) setPerdidas(perd.map((r: any) => ({
+      id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
+      tratamiento: r.tratamiento, causa: r.causa, tallos: r.tallos, fecha: r.created_at,
+    })));
+  };
+
+  useEffect(() => {
+    loadRegistros();
+    const ch = supabase.channel("registros-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "productividad" }, () => loadRegistros())
+      .on("postgres_changes", { event: "*", schema: "public", table: "perdidas" }, () => loadRegistros())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
@@ -169,24 +195,15 @@ const Index = () => {
     );
   }, [registros]);
 
-  const añadirRegistro = () => {
+  const añadirRegistro = async () => {
     if (!cama || !variedadSel || !parcelaSel || !tratamiento.trim() || nRamos <= 0 || nTallos <= 0) return;
-    setRegistros((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        cama,
-        variedad: variedadSel,
-        parcela: parcelaSel,
-        tratamiento: tratamiento.trim(),
-        ramos: nRamos,
-        tallos: nTallos,
-        total: nRamos * nTallos,
-        fecha: new Date().toISOString(),
-      },
-    ]);
-    setRamos("");
-    setTallosPorRamo("");
+    const { error } = await supabase.from("productividad").insert({
+      cama, variedad: variedadSel, parcela: parcelaSel,
+      tratamiento: tratamiento.trim(), ramos: nRamos,
+      tallos_por_ramo: nTallos, total: nRamos * nTallos,
+    });
+    if (error) { toast.error(error.message); return; }
+    setRamos(""); setTallosPorRamo("");
     toast.success("Registro añadido");
   };
 
@@ -204,24 +221,27 @@ const Index = () => {
     );
   }, [perdidas]);
 
-  const añadirPerdida = () => {
+  const añadirPerdida = async () => {
     const t = parseInt(pTallos) || 0;
     if (!cama || !pVariedadSel || !pParcelaSel || !pTratamiento.trim() || !pCausa || t <= 0) return;
-    setPerdidas((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        cama,
-        variedad: pVariedadSel,
-        parcela: pParcelaSel,
-        tratamiento: pTratamiento.trim(),
-        causa: pCausa,
-        tallos: t,
-        fecha: new Date().toISOString(),
-      },
-    ]);
+    const { error } = await supabase.from("perdidas").insert({
+      cama, variedad: pVariedadSel, parcela: pParcelaSel,
+      tratamiento: pTratamiento.trim(), causa: pCausa, tallos: t,
+    });
+    if (error) { toast.error(error.message); return; }
     setPTallos("");
     toast.success("Pérdida registrada");
+  };
+
+  const limpiarProductividad = async () => {
+    if (!confirm("¿Eliminar TODOS los registros de productividad?")) return;
+    const { error } = await supabase.from("productividad").delete().not("id", "is", null);
+    if (error) toast.error(error.message);
+  };
+  const limpiarPerdidas = async () => {
+    if (!confirm("¿Eliminar TODOS los registros de pérdidas?")) return;
+    const { error } = await supabase.from("perdidas").delete().not("id", "is", null);
+    if (error) toast.error(error.message);
   };
 
   const limpiarTodo = async () => {
@@ -244,6 +264,107 @@ const Index = () => {
       </nav>
 
       <main className="max-w-7xl mx-auto space-y-8">
+        <div className="flex gap-2 border-2 border-lapis bg-white p-2">
+          <button
+            onClick={() => setVista("inventario")}
+            className={`flex-1 font-mono text-xs uppercase tracking-widest px-6 py-3 transition-colors ${vista === "inventario" ? "bg-lapis text-background" : "text-lapis hover:bg-accent-orange/10"}`}
+          >
+            Cargar inventario
+          </button>
+          <button
+            onClick={() => setVista("registros")}
+            className={`flex-1 font-mono text-xs uppercase tracking-widest px-6 py-3 transition-colors ${vista === "registros" ? "bg-lapis text-background" : "text-lapis hover:bg-accent-orange/10"}`}
+          >
+            Registros
+          </button>
+        </div>
+
+        {vista === "registros" ? (
+          <>
+            <section className="border-2 border-lapis bg-white">
+              <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
+                <span className="font-mono text-xs uppercase font-bold text-lapis">Productividad — registros guardados</span>
+                {acumulados.length > 0 && (
+                  <button onClick={limpiarProductividad} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>
+                )}
+              </div>
+              {acumulados.length === 0 ? (
+                <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full font-mono text-xs">
+                    <thead className="bg-lapis text-background">
+                      <tr>
+                        <th className="text-left p-3 uppercase">Cama</th>
+                        <th className="text-left p-3 uppercase">Variedad</th>
+                        <th className="text-left p-3 uppercase">Parcela</th>
+                        <th className="text-left p-3 uppercase">Tratamiento</th>
+                        <th className="text-right p-3 uppercase">Registros</th>
+                        <th className="text-right p-3 uppercase">Ramos</th>
+                        <th className="text-right p-3 uppercase">Total tallos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {acumulados.map((a) => (
+                        <tr key={`${a.cama}-${a.variedad}-${a.parcela}-${a.tratamiento}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{a.cama}</td>
+                          <td className="p-3 text-lapis">{a.variedad}</td>
+                          <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td>
+                          <td className="p-3 text-lapis">{a.tratamiento}</td>
+                          <td className="p-3 text-right">{a.n}</td>
+                          <td className="p-3 text-right">{a.ramos.toLocaleString("es")}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">{a.total.toLocaleString("es")}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            <section className="border-2 border-lapis bg-white">
+              <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
+                <span className="font-mono text-xs uppercase font-bold text-lapis">Pérdidas — registros guardados</span>
+                {acumuladosPerdidas.length > 0 && (
+                  <button onClick={limpiarPerdidas} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>
+                )}
+              </div>
+              {acumuladosPerdidas.length === 0 ? (
+                <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full font-mono text-xs">
+                    <thead className="bg-lapis text-background">
+                      <tr>
+                        <th className="text-left p-3 uppercase">Cama</th>
+                        <th className="text-left p-3 uppercase">Variedad</th>
+                        <th className="text-left p-3 uppercase">Parcela</th>
+                        <th className="text-left p-3 uppercase">Tratamiento</th>
+                        <th className="text-left p-3 uppercase">Causa</th>
+                        <th className="text-right p-3 uppercase">Registros</th>
+                        <th className="text-right p-3 uppercase">Total tallos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {acumuladosPerdidas.map((a) => (
+                        <tr key={`${a.cama}-${a.variedad}-${a.parcela}-${a.tratamiento}-${a.causa}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{a.cama}</td>
+                          <td className="p-3 text-lapis">{a.variedad}</td>
+                          <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td>
+                          <td className="p-3 text-lapis">{a.tratamiento}</td>
+                          <td className="p-3 text-lapis">{a.causa}</td>
+                          <td className="p-3 text-right">{a.n}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">{a.tallos.toLocaleString("es")}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          </>
+        ) : (
+        <>
         {/* Carga */}
         <section className="border-2 border-lapis bg-white">
           <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
@@ -415,7 +536,7 @@ const Index = () => {
               <div className="border-t-2 border-lapis">
                 <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
                   <span className="font-mono text-xs uppercase font-bold text-lapis">Acumulado por cama, variedad, parcela y tratamiento</span>
-                  <button onClick={() => setRegistros([])} className="font-mono text-xs uppercase text-accent-orange hover:underline">
+                  <button onClick={limpiarProductividad} className="font-mono text-xs uppercase text-accent-orange hover:underline">
                     Limpiar
                   </button>
                 </div>
@@ -521,7 +642,7 @@ const Index = () => {
               <div className="border-t-2 border-lapis">
                 <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
                   <span className="font-mono text-xs uppercase font-bold text-lapis">Acumulado de pérdidas por cama, variedad, parcela, tratamiento y causa</span>
-                  <button onClick={() => setPerdidas([])} className="font-mono text-xs uppercase text-accent-orange hover:underline">
+                  <button onClick={limpiarPerdidas} className="font-mono text-xs uppercase text-accent-orange hover:underline">
                     Limpiar
                   </button>
                 </div>
@@ -567,6 +688,8 @@ const Index = () => {
           <div className="border-2 border-dashed border-lapis/30 p-12 text-center font-mono text-sm text-muted-foreground">
             {data.length === 0 ? "Sin datos. Sube un archivo Excel para comenzar." : "Sin resultados con esos filtros."}
           </div>
+        )}
+        </>
         )}
       </main>
 
