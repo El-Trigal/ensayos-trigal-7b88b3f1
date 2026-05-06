@@ -47,6 +47,16 @@ const Index = () => {
   type Registro = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; fecha: string };
   const [registros, setRegistros] = useState<Registro[]>([]);
 
+  // Pérdidas
+  const CAUSAS = ["Botón corona", "Botrytis", "Compuesto", "Daño mecanico", "Delgados", "Espiga corta", "Flor Abierta", "Malformación", "Mezcla", "Mutación"] as const;
+  const [pVariedadSel, setPVariedadSel] = useState<string>("");
+  const [pParcelaSel, setPParcelaSel] = useState<string>("");
+  const [pTratamiento, setPTratamiento] = useState<string>("");
+  const [pCausa, setPCausa] = useState<string>("");
+  const [pTallos, setPTallos] = useState<string>("");
+  type Perdida = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; fecha: string };
+  const [perdidas, setPerdidas] = useState<Perdida[]>([]);
+
   const load = async () => {
     const all: Siembra[] = [];
     const pageSize = 1000;
@@ -178,6 +188,40 @@ const Index = () => {
     setRamos("");
     setTallosPorRamo("");
     toast.success("Registro añadido");
+  };
+
+  const acumuladosPerdidas = useMemo(() => {
+    const m = new Map<string, { cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; n: number }>();
+    perdidas.forEach((r) => {
+      const key = `${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}||${r.causa}`;
+      const cur = m.get(key) ?? { cama: r.cama, variedad: r.variedad, parcela: r.parcela, tratamiento: r.tratamiento, causa: r.causa, tallos: 0, n: 0 };
+      cur.tallos += r.tallos;
+      cur.n += 1;
+      m.set(key, cur);
+    });
+    return Array.from(m.values()).sort((a, b) =>
+      a.cama.localeCompare(b.cama) || a.variedad.localeCompare(b.variedad) || Number(a.parcela) - Number(b.parcela) || a.causa.localeCompare(b.causa)
+    );
+  }, [perdidas]);
+
+  const añadirPerdida = () => {
+    const t = parseInt(pTallos) || 0;
+    if (!cama || !pVariedadSel || !pParcelaSel || !pTratamiento.trim() || !pCausa || t <= 0) return;
+    setPerdidas((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        cama,
+        variedad: pVariedadSel,
+        parcela: pParcelaSel,
+        tratamiento: pTratamiento.trim(),
+        causa: pCausa,
+        tallos: t,
+        fecha: new Date().toISOString(),
+      },
+    ]);
+    setPTallos("");
+    toast.success("Pérdida registrada");
   };
 
   const limpiarTodo = async () => {
