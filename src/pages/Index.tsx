@@ -435,7 +435,7 @@ const Index = () => {
               <div className="border-t-2 border-lapis">
                 <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
                   <span className="font-mono text-xs uppercase font-bold text-lapis">Acumulado por cama, variedad, parcela y tratamiento</span>
-                  <button onClick={() => setRegistros([])} className="font-mono text-xs uppercase text-accent-orange hover:underline">
+                  <button onClick={limpiarProductividad} className="font-mono text-xs uppercase text-accent-orange hover:underline">
                     Limpiar
                   </button>
                 </div>
@@ -541,7 +541,7 @@ const Index = () => {
               <div className="border-t-2 border-lapis">
                 <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
                   <span className="font-mono text-xs uppercase font-bold text-lapis">Acumulado de pérdidas por cama, variedad, parcela, tratamiento y causa</span>
-                  <button onClick={() => setPerdidas([])} className="font-mono text-xs uppercase text-accent-orange hover:underline">
+                  <button onClick={limpiarPerdidas} className="font-mono text-xs uppercase text-accent-orange hover:underline">
                     Limpiar
                   </button>
                 </div>
