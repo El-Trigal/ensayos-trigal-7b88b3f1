@@ -47,6 +47,16 @@ const Index = () => {
   type Registro = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; fecha: string };
   const [registros, setRegistros] = useState<Registro[]>([]);
 
+  // Pérdidas
+  const CAUSAS = ["Botón corona", "Botrytis", "Compuesto", "Daño mecanico", "Delgados", "Espiga corta", "Flor Abierta", "Malformación", "Mezcla", "Mutación"] as const;
+  const [pVariedadSel, setPVariedadSel] = useState<string>("");
+  const [pParcelaSel, setPParcelaSel] = useState<string>("");
+  const [pTratamiento, setPTratamiento] = useState<string>("");
+  const [pCausa, setPCausa] = useState<string>("");
+  const [pTallos, setPTallos] = useState<string>("");
+  type Perdida = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; fecha: string };
+  const [perdidas, setPerdidas] = useState<Perdida[]>([]);
+
   const load = async () => {
     const all: Siembra[] = [];
     const pageSize = 1000;
@@ -178,6 +188,40 @@ const Index = () => {
     setRamos("");
     setTallosPorRamo("");
     toast.success("Registro añadido");
+  };
+
+  const acumuladosPerdidas = useMemo(() => {
+    const m = new Map<string, { cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; n: number }>();
+    perdidas.forEach((r) => {
+      const key = `${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}||${r.causa}`;
+      const cur = m.get(key) ?? { cama: r.cama, variedad: r.variedad, parcela: r.parcela, tratamiento: r.tratamiento, causa: r.causa, tallos: 0, n: 0 };
+      cur.tallos += r.tallos;
+      cur.n += 1;
+      m.set(key, cur);
+    });
+    return Array.from(m.values()).sort((a, b) =>
+      a.cama.localeCompare(b.cama) || a.variedad.localeCompare(b.variedad) || Number(a.parcela) - Number(b.parcela) || a.causa.localeCompare(b.causa)
+    );
+  }, [perdidas]);
+
+  const añadirPerdida = () => {
+    const t = parseInt(pTallos) || 0;
+    if (!cama || !pVariedadSel || !pParcelaSel || !pTratamiento.trim() || !pCausa || t <= 0) return;
+    setPerdidas((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        cama,
+        variedad: pVariedadSel,
+        parcela: pParcelaSel,
+        tratamiento: pTratamiento.trim(),
+        causa: pCausa,
+        tallos: t,
+        fecha: new Date().toISOString(),
+      },
+    ]);
+    setPTallos("");
+    toast.success("Pérdida registrada");
   };
 
   const limpiarTodo = async () => {
@@ -402,6 +446,112 @@ const Index = () => {
                     ))}
                   </tbody>
                 </table>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Pérdidas */}
+        {cama && nParcelas > 0 && (
+          <section className="border-2 border-lapis bg-white">
+            <div className="border-b-2 border-lapis p-4">
+              <span className="font-mono text-xs uppercase font-bold text-lapis">04 // Pérdidas</span>
+            </div>
+            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Variedad</label>
+                <select value={pVariedadSel} onChange={(e) => setPVariedadSel(e.target.value)}
+                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
+                  <option value="">— Selecciona —</option>
+                  {variedades.map((v) => <option key={v.nom} value={v.nom}>{v.nom}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Parcela</label>
+                <select value={pParcelaSel} onChange={(e) => setPParcelaSel(e.target.value)}
+                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
+                  <option value="">— Selecciona —</option>
+                  {Array.from({ length: nParcelas }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>Parcela {n}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Tratamiento</label>
+                <input type="text" value={pTratamiento} onChange={(e) => setPTratamiento(e.target.value)}
+                  placeholder="Nombre del tratamiento"
+                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+              </div>
+              {pVariedadSel && pParcelaSel && pTratamiento.trim() && (
+                <>
+                  <div>
+                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Causa</label>
+                    <select value={pCausa} onChange={(e) => setPCausa(e.target.value)}
+                      className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
+                      <option value="">— Selecciona —</option>
+                      {CAUSAS.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">N° de tallos</label>
+                    <input type="number" min="0" value={pTallos} onChange={(e) => setPTallos(e.target.value)}
+                      placeholder="Tallos perdidos"
+                      className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+                  </div>
+                  {pCausa && (parseInt(pTallos) || 0) > 0 && (
+                    <div className="md:col-span-2 border-2 border-lapis bg-accent-orange/10 p-6 flex items-center justify-between gap-4 flex-wrap">
+                      <div>
+                        <span className="font-mono text-xs uppercase text-muted-foreground">Pérdida en este registro</span>
+                        <div className="mt-2 text-4xl font-extrabold tracking-tighter text-accent-orange">{(parseInt(pTallos) || 0).toLocaleString("es")}</div>
+                        <span className="font-mono text-[10px] text-muted-foreground">Cama {cama} · {pVariedadSel} · Parcela {pParcelaSel} · {pTratamiento} · {pCausa}</span>
+                      </div>
+                      <button
+                        onClick={añadirPerdida}
+                        className="font-mono text-xs uppercase tracking-widest bg-lapis text-background px-6 py-3 hover:bg-accent-orange transition-colors"
+                      >
+                        Añadir
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            {acumuladosPerdidas.length > 0 && (
+              <div className="border-t-2 border-lapis">
+                <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
+                  <span className="font-mono text-xs uppercase font-bold text-lapis">Acumulado de pérdidas por cama, variedad, parcela, tratamiento y causa</span>
+                  <button onClick={() => setPerdidas([])} className="font-mono text-xs uppercase text-accent-orange hover:underline">
+                    Limpiar
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full font-mono text-xs">
+                    <thead className="bg-lapis text-background">
+                      <tr>
+                        <th className="text-left p-3 uppercase">Cama</th>
+                        <th className="text-left p-3 uppercase">Variedad</th>
+                        <th className="text-left p-3 uppercase">Parcela</th>
+                        <th className="text-left p-3 uppercase">Tratamiento</th>
+                        <th className="text-left p-3 uppercase">Causa</th>
+                        <th className="text-right p-3 uppercase">Registros</th>
+                        <th className="text-right p-3 uppercase">Total tallos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {acumuladosPerdidas.map((a) => (
+                        <tr key={`${a.cama}-${a.variedad}-${a.parcela}-${a.tratamiento}-${a.causa}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{a.cama}</td>
+                          <td className="p-3 text-lapis">{a.variedad}</td>
+                          <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td>
+                          <td className="p-3 text-lapis">{a.tratamiento}</td>
+                          <td className="p-3 text-lapis">{a.causa}</td>
+                          <td className="p-3 text-right">{a.n}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">{a.tallos.toLocaleString("es")}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
