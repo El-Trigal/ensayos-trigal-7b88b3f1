@@ -35,6 +35,7 @@ const parseExcelDate = (v: any): string | null => {
 const Index = () => {
   const [data, setData] = useState<Siembra[]>([]);
   const [loading, setLoading] = useState(false);
+  const [vista, setVista] = useState<"inventario" | "registros">("inventario");
   const [bloque, setBloque] = useState<string>("");
   const [cama, setCama] = useState<string>("");
   const [parcelas, setParcelas] = useState<string>("");
@@ -48,7 +49,7 @@ const Index = () => {
   const [registros, setRegistros] = useState<Registro[]>([]);
 
   // Pérdidas
-  const CAUSAS = ["Botón corona", "Botrytis", "Compuesto", "Daño mecanico", "Delgados", "Espiga corta", "Flor Abierta", "Malformación", "Mezcla", "Mutación"] as const;
+  const CAUSAS = ["Botón corona", "Botrytis", "Compuesto", "Daño mecanico", "Delgados", "Espiga corta", "Flor Abierta", "Malformación", "Mezcla", "Mutación", "Pocos puntos", "Secadera", "Tallos cortos", "Torcidos", "Vegetativo"] as const;
   const [pVariedadSel, setPVariedadSel] = useState<string>("");
   const [pParcelaSel, setPParcelaSel] = useState<string>("");
   const [pTratamiento, setPTratamiento] = useState<string>("");
@@ -77,6 +78,31 @@ const Index = () => {
     load();
     const ch = supabase.channel("siembras-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "siembras" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
+  const loadRegistros = async () => {
+    const [{ data: prod }, { data: perd }] = await Promise.all([
+      supabase.from("productividad").select("*").order("created_at", { ascending: false }),
+      supabase.from("perdidas").select("*").order("created_at", { ascending: false }),
+    ]);
+    if (prod) setRegistros(prod.map((r: any) => ({
+      id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
+      tratamiento: r.tratamiento, ramos: r.ramos, tallos: r.tallos_por_ramo,
+      total: r.total, fecha: r.created_at,
+    })));
+    if (perd) setPerdidas(perd.map((r: any) => ({
+      id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
+      tratamiento: r.tratamiento, causa: r.causa, tallos: r.tallos, fecha: r.created_at,
+    })));
+  };
+
+  useEffect(() => {
+    loadRegistros();
+    const ch = supabase.channel("registros-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "productividad" }, () => loadRegistros())
+      .on("postgres_changes", { event: "*", schema: "public", table: "perdidas" }, () => loadRegistros())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
@@ -169,24 +195,15 @@ const Index = () => {
     );
   }, [registros]);
 
-  const añadirRegistro = () => {
+  const añadirRegistro = async () => {
     if (!cama || !variedadSel || !parcelaSel || !tratamiento.trim() || nRamos <= 0 || nTallos <= 0) return;
-    setRegistros((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        cama,
-        variedad: variedadSel,
-        parcela: parcelaSel,
-        tratamiento: tratamiento.trim(),
-        ramos: nRamos,
-        tallos: nTallos,
-        total: nRamos * nTallos,
-        fecha: new Date().toISOString(),
-      },
-    ]);
-    setRamos("");
-    setTallosPorRamo("");
+    const { error } = await supabase.from("productividad").insert({
+      cama, variedad: variedadSel, parcela: parcelaSel,
+      tratamiento: tratamiento.trim(), ramos: nRamos,
+      tallos_por_ramo: nTallos, total: nRamos * nTallos,
+    });
+    if (error) { toast.error(error.message); return; }
+    setRamos(""); setTallosPorRamo("");
     toast.success("Registro añadido");
   };
 
@@ -204,24 +221,27 @@ const Index = () => {
     );
   }, [perdidas]);
 
-  const añadirPerdida = () => {
+  const añadirPerdida = async () => {
     const t = parseInt(pTallos) || 0;
     if (!cama || !pVariedadSel || !pParcelaSel || !pTratamiento.trim() || !pCausa || t <= 0) return;
-    setPerdidas((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        cama,
-        variedad: pVariedadSel,
-        parcela: pParcelaSel,
-        tratamiento: pTratamiento.trim(),
-        causa: pCausa,
-        tallos: t,
-        fecha: new Date().toISOString(),
-      },
-    ]);
+    const { error } = await supabase.from("perdidas").insert({
+      cama, variedad: pVariedadSel, parcela: pParcelaSel,
+      tratamiento: pTratamiento.trim(), causa: pCausa, tallos: t,
+    });
+    if (error) { toast.error(error.message); return; }
     setPTallos("");
     toast.success("Pérdida registrada");
+  };
+
+  const limpiarProductividad = async () => {
+    if (!confirm("¿Eliminar TODOS los registros de productividad?")) return;
+    const { error } = await supabase.from("productividad").delete().not("id", "is", null);
+    if (error) toast.error(error.message);
+  };
+  const limpiarPerdidas = async () => {
+    if (!confirm("¿Eliminar TODOS los registros de pérdidas?")) return;
+    const { error } = await supabase.from("perdidas").delete().not("id", "is", null);
+    if (error) toast.error(error.message);
   };
 
   const limpiarTodo = async () => {
