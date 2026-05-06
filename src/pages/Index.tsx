@@ -411,74 +411,7 @@ const Index = () => {
         {/* Resultados */}
         {filtered.length > 0 ? (
           <>
-            <section className="border-2 border-lapis bg-white overflow-hidden">
-              <div className="border-b-2 border-lapis p-4">
-                <span className="font-mono text-xs uppercase font-bold text-lapis">
-                  Variedades sembradas {bloque && `· Bloque ${bloque}`} {cama && `· Cama ${cama}`}
-                </span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full font-mono text-xs">
-                  <thead className="bg-lapis text-background">
-                    <tr>
-                      <th className="text-left p-3 uppercase tracking-tight">Variedad</th>
-                      <th className="text-right p-3 uppercase tracking-tight">Siembras</th>
-                      <th className="text-right p-3 uppercase tracking-tight">Plantas</th>
-                      <th className="text-right p-3 uppercase tracking-tight">% del total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {variedades.map((v) => (
-                      <tr key={v.nom} className="border-b border-lapis/10 hover:bg-accent-orange/10">
-                        <td className="p-3 font-bold text-lapis">{v.nom}</td>
-                        <td className="p-3 text-right">{v.siembras}</td>
-                        <td className="p-3 text-right text-accent-orange font-bold">{v.plantas.toLocaleString("es")}</td>
-                        <td className="p-3 text-right">{((v.plantas / totalPlantas) * 100).toFixed(1)}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            <section className="border-2 border-lapis bg-white overflow-hidden">
-              <div className="border-b-2 border-lapis p-4">
-                <span className="font-mono text-xs uppercase font-bold text-lapis">Detalle de siembras</span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full font-mono text-xs">
-                  <thead className="bg-lapis text-background">
-                    <tr>
-                      <th className="text-left p-3 uppercase">Bloque</th>
-                      <th className="text-left p-3 uppercase">Cama</th>
-                      <th className="text-left p-3 uppercase">Semana</th>
-                      <th className="text-left p-3 uppercase">Fecha</th>
-                      <th className="text-left p-3 uppercase">Producto</th>
-                      <th className="text-left p-3 uppercase">Variedad</th>
-                      <th className="text-right p-3 uppercase">Plantas</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.slice(0, 200).map((r) => (
-                      <tr key={r.id} className="border-b border-lapis/10 hover:bg-lapis/5">
-                        <td className="p-3 font-bold">{r.bloque}</td>
-                        <td className="p-3">{r.cm}</td>
-                        <td className="p-3">{r.semana}</td>
-                        <td className="p-3">{r.fecha}</td>
-                        <td className="p-3">{r.producto}</td>
-                        <td className="p-3 text-lapis">{r.nom_flor}</td>
-                        <td className="p-3 text-right text-accent-orange font-bold">{r.plantas.toLocaleString("es")}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {filtered.length > 200 && (
-                  <div className="p-3 font-mono text-xs text-muted-foreground text-center border-t-2 border-lapis/10">
-                    Mostrando 200 de {filtered.length} registros
-                  </div>
-                )}
-              </div>
-            </section>
+            <></>
           </>
         ) : (
           <div className="border-2 border-dashed border-lapis/30 p-12 text-center font-mono text-sm text-muted-foreground">
