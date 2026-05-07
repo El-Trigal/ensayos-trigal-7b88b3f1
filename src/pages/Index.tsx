@@ -977,6 +977,106 @@ const Index = () => {
           </section>
         )}
 
+        {/* Peso de ramo */}
+        {cama && nParcelas > 0 && (
+          <section className="border-2 border-lapis bg-white">
+            <div className="border-b-2 border-lapis p-4">
+              <span className="font-mono text-xs uppercase font-bold text-lapis">06 // Peso de ramo</span>
+            </div>
+            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Parcela</label>
+                <select value={rParcelaSel} onChange={(e) => setRParcelaSel(e.target.value)}
+                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
+                  <option value="">— Selecciona —</option>
+                  {Array.from({ length: nParcelas }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>Parcela {n}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Tratamiento</label>
+                <input type="text" value={rTratamiento} onChange={(e) => setRTratamiento(e.target.value)}
+                  placeholder="Nombre del tratamiento"
+                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+              </div>
+              {rParcelaSel && rTratamiento.trim() && (
+                <>
+                  <div>
+                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">
+                      Tallos por ramo — Ramo {siguienteNumeroRamo(rParcelaSel, rTratamiento)}
+                    </label>
+                    <input type="number" min="0" value={rTallosPorRamo} onChange={(e) => setRTallosPorRamo(e.target.value)}
+                      placeholder="Tallos / ramo"
+                      className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+                  </div>
+                  <div>
+                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Peso del ramo (g)</label>
+                    <input type="number" min="0" step="0.1" value={rPeso} onChange={(e) => setRPeso(e.target.value)}
+                      placeholder="g"
+                      className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+                  </div>
+                  {(parseInt(rTallosPorRamo) || 0) > 0 && (parseFloat(rPeso) || 0) > 0 && (
+                    <div className="md:col-span-2 border-2 border-lapis bg-accent-orange/10 p-6 flex items-center justify-between gap-4 flex-wrap">
+                      <div>
+                        <span className="font-mono text-xs uppercase text-muted-foreground">Próximo registro · Peso/tallo</span>
+                        <div className="mt-2 text-4xl font-extrabold tracking-tighter text-accent-orange">
+                          Ramo {siguienteNumeroRamo(rParcelaSel, rTratamiento)} · {((parseFloat(rPeso) || 0) / (parseInt(rTallosPorRamo) || 1)).toFixed(2)} g
+                        </div>
+                        <span className="font-mono text-[10px] text-muted-foreground">Cama {cama} · Parcela {rParcelaSel} · {rTratamiento} · {rTallosPorRamo} tallos · {rPeso} g</span>
+                      </div>
+                      <button
+                        onClick={añadirRamo}
+                        className="font-mono text-xs uppercase tracking-widest bg-lapis text-background px-6 py-3 hover:bg-accent-orange transition-colors"
+                      >
+                        Añadir
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            {acumuladosRamos.length > 0 && (
+              <div className="border-t-2 border-lapis">
+                <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
+                  <span className="font-mono text-xs uppercase font-bold text-lapis">Acumulado por cama, parcela y tratamiento</span>
+                  <button onClick={limpiarRamos} className="font-mono text-xs uppercase text-accent-orange hover:underline">
+                    Limpiar
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full font-mono text-xs">
+                    <thead className="bg-lapis text-background">
+                      <tr>
+                        <th className="text-left p-3 uppercase">Cama</th>
+                        <th className="text-left p-3 uppercase">Parcela</th>
+                        <th className="text-left p-3 uppercase">Tratamiento</th>
+                        <th className="text-right p-3 uppercase">N° ramos</th>
+                        <th className="text-right p-3 uppercase">Total tallos</th>
+                        <th className="text-right p-3 uppercase">Peso total (g)</th>
+                        <th className="text-right p-3 uppercase">Peso/tallo (g)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {acumuladosRamos.map((a) => (
+                        <tr key={`${a.cama}-${a.parcela}-${a.tratamiento}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{a.cama}</td>
+                          <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td>
+                          <td className="p-3 text-lapis">{a.tratamiento}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">{a.n}</td>
+                          <td className="p-3 text-right">{a.sumTallos}</td>
+                          <td className="p-3 text-right">{a.sumPeso.toFixed(1)}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">{a.sumTallos > 0 ? (a.sumPeso / a.sumTallos).toFixed(2) : "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
         {/* Resultados */}
         {filtered.length > 0 ? (
           <>
