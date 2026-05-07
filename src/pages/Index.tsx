@@ -58,6 +58,14 @@ const Index = () => {
   type Perdida = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; fecha: string };
   const [perdidas, setPerdidas] = useState<Perdida[]>([]);
 
+  // Longitud y puntos
+  const [lParcelaSel, setLParcelaSel] = useState<string>("");
+  const [lTratamiento, setLTratamiento] = useState<string>("");
+  const [lLongitud, setLLongitud] = useState<string>("");
+  const [lBotones, setLBotones] = useState<string>("");
+  type Tallo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; longitud_cm: number; botones: number; fecha: string };
+  const [tallos, setTallos] = useState<Tallo[]>([]);
+
   const load = async () => {
     const all: Siembra[] = [];
     const pageSize = 1000;
@@ -83,9 +91,10 @@ const Index = () => {
   }, []);
 
   const loadRegistros = async () => {
-    const [{ data: prod }, { data: perd }] = await Promise.all([
+    const [{ data: prod }, { data: perd }, { data: tlls }] = await Promise.all([
       supabase.from("productividad").select("*").order("created_at", { ascending: false }),
       supabase.from("perdidas").select("*").order("created_at", { ascending: false }),
+      supabase.from("tallos").select("*").order("created_at", { ascending: false }),
     ]);
     if (prod) setRegistros(prod.map((r: any) => ({
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
@@ -96,6 +105,10 @@ const Index = () => {
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
       tratamiento: r.tratamiento, causa: r.causa, tallos: r.tallos, fecha: r.created_at,
     })));
+    if (tlls) setTallos(tlls.map((r: any) => ({
+      id: r.id, cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento,
+      numero: r.numero, longitud_cm: Number(r.longitud_cm), botones: r.botones, fecha: r.created_at,
+    })));
   };
 
   useEffect(() => {
@@ -103,6 +116,7 @@ const Index = () => {
     const ch = supabase.channel("registros-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "productividad" }, () => loadRegistros())
       .on("postgres_changes", { event: "*", schema: "public", table: "perdidas" }, () => loadRegistros())
+      .on("postgres_changes", { event: "*", schema: "public", table: "tallos" }, () => loadRegistros())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
@@ -241,6 +255,50 @@ const Index = () => {
   const limpiarPerdidas = async () => {
     if (!confirm("¿Eliminar TODOS los registros de pérdidas?")) return;
     const { error } = await supabase.from("perdidas").delete().not("id", "is", null);
+    if (error) toast.error(error.message);
+  };
+
+  const acumuladosTallos = useMemo(() => {
+    const m = new Map<string, { cama: string; parcela: string; tratamiento: string; n: number; sumLong: number; sumBot: number }>();
+    tallos.forEach((r) => {
+      const key = `${r.cama}||${r.parcela}||${r.tratamiento}`;
+      const cur = m.get(key) ?? { cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento, n: 0, sumLong: 0, sumBot: 0 };
+      cur.n += 1;
+      cur.sumLong += r.longitud_cm;
+      cur.sumBot += r.botones;
+      m.set(key, cur);
+    });
+    return Array.from(m.values()).sort((a, b) =>
+      a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) || a.tratamiento.localeCompare(b.tratamiento)
+    );
+  }, [tallos]);
+
+  const siguienteNumeroTallo = (parcela: string, tratamiento: string) => {
+    if (!cama || !parcela || !tratamiento.trim()) return 1;
+    const t = tratamiento.trim();
+    const max = tallos
+      .filter((r) => r.cama === cama && r.parcela === parcela && r.tratamiento === t)
+      .reduce((acc, r) => Math.max(acc, r.numero), 0);
+    return max + 1;
+  };
+
+  const añadirTallo = async () => {
+    const lon = parseFloat(lLongitud) || 0;
+    const bot = parseInt(lBotones) || 0;
+    if (!cama || !lParcelaSel || !lTratamiento.trim() || lon <= 0 || bot < 0) return;
+    const numero = siguienteNumeroTallo(lParcelaSel, lTratamiento);
+    const { error } = await supabase.from("tallos").insert({
+      cama, parcela: lParcelaSel, tratamiento: lTratamiento.trim(),
+      numero, longitud_cm: lon, botones: bot,
+    });
+    if (error) { toast.error(error.message); return; }
+    setLLongitud(""); setLBotones("");
+    toast.success(`Tallo ${numero} registrado`);
+  };
+
+  const limpiarTallos = async () => {
+    if (!confirm("¿Eliminar TODOS los registros de longitud y puntos?")) return;
+    const { error } = await supabase.from("tallos").delete().not("id", "is", null);
     if (error) toast.error(error.message);
   };
 
