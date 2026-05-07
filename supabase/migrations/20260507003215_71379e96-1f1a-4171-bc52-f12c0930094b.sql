@@ -1,0 +1,1 @@
+ALTER TABLE public.tallos ALTER COLUMN variedad DROP NOT NULL;

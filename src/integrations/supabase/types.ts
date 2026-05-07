@@ -156,7 +156,7 @@ export type Database = {
           numero: number
           parcela: string
           tratamiento: string
-          variedad: string
+          variedad: string | null
         }
         Insert: {
           botones?: number
@@ -167,7 +167,7 @@ export type Database = {
           numero: number
           parcela: string
           tratamiento: string
-          variedad: string
+          variedad?: string | null
         }
         Update: {
           botones?: number
@@ -178,7 +178,7 @@ export type Database = {
           numero?: number
           parcela?: string
           tratamiento?: string
-          variedad?: string
+          variedad?: string | null
         }
         Relationships: []
       }
