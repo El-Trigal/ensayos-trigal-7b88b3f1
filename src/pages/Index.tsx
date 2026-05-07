@@ -66,6 +66,14 @@ const Index = () => {
   type Tallo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; longitud_cm: number; botones: number; fecha: string };
   const [tallos, setTallos] = useState<Tallo[]>([]);
 
+  // Peso de ramo
+  const [rParcelaSel, setRParcelaSel] = useState<string>("");
+  const [rTratamiento, setRTratamiento] = useState<string>("");
+  const [rTallosPorRamo, setRTallosPorRamo] = useState<string>("");
+  const [rPeso, setRPeso] = useState<string>("");
+  type Ramo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; tallos_por_ramo: number; peso_g: number; fecha: string };
+  const [ramosPeso, setRamosPeso] = useState<Ramo[]>([]);
+
   const load = async () => {
     const all: Siembra[] = [];
     const pageSize = 1000;
@@ -91,10 +99,11 @@ const Index = () => {
   }, []);
 
   const loadRegistros = async () => {
-    const [{ data: prod }, { data: perd }, { data: tlls }] = await Promise.all([
+    const [{ data: prod }, { data: perd }, { data: tlls }, { data: rmps }] = await Promise.all([
       supabase.from("productividad").select("*").order("created_at", { ascending: false }),
       supabase.from("perdidas").select("*").order("created_at", { ascending: false }),
       supabase.from("tallos").select("*").order("created_at", { ascending: false }),
+      supabase.from("ramos_peso").select("*").order("created_at", { ascending: false }),
     ]);
     if (prod) setRegistros(prod.map((r: any) => ({
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
@@ -109,6 +118,10 @@ const Index = () => {
       id: r.id, cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento,
       numero: r.numero, longitud_cm: Number(r.longitud_cm), botones: r.botones, fecha: r.created_at,
     })));
+    if (rmps) setRamosPeso(rmps.map((r: any) => ({
+      id: r.id, cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento,
+      numero: r.numero, tallos_por_ramo: r.tallos_por_ramo, peso_g: Number(r.peso_g), fecha: r.created_at,
+    })));
   };
 
   useEffect(() => {
@@ -117,6 +130,7 @@ const Index = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "productividad" }, () => loadRegistros())
       .on("postgres_changes", { event: "*", schema: "public", table: "perdidas" }, () => loadRegistros())
       .on("postgres_changes", { event: "*", schema: "public", table: "tallos" }, () => loadRegistros())
+      .on("postgres_changes", { event: "*", schema: "public", table: "ramos_peso" }, () => loadRegistros())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
@@ -299,6 +313,50 @@ const Index = () => {
   const limpiarTallos = async () => {
     if (!confirm("¿Eliminar TODOS los registros de longitud y puntos?")) return;
     const { error } = await supabase.from("tallos").delete().not("id", "is", null);
+    if (error) toast.error(error.message);
+  };
+
+  const acumuladosRamos = useMemo(() => {
+    const m = new Map<string, { cama: string; parcela: string; tratamiento: string; n: number; sumTallos: number; sumPeso: number }>();
+    ramosPeso.forEach((r) => {
+      const key = `${r.cama}||${r.parcela}||${r.tratamiento}`;
+      const cur = m.get(key) ?? { cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento, n: 0, sumTallos: 0, sumPeso: 0 };
+      cur.n += 1;
+      cur.sumTallos += r.tallos_por_ramo;
+      cur.sumPeso += r.peso_g;
+      m.set(key, cur);
+    });
+    return Array.from(m.values()).sort((a, b) =>
+      a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) || a.tratamiento.localeCompare(b.tratamiento)
+    );
+  }, [ramosPeso]);
+
+  const siguienteNumeroRamo = (parcela: string, tratamiento: string) => {
+    if (!cama || !parcela || !tratamiento.trim()) return 1;
+    const t = tratamiento.trim();
+    const max = ramosPeso
+      .filter((r) => r.cama === cama && r.parcela === parcela && r.tratamiento === t)
+      .reduce((acc, r) => Math.max(acc, r.numero), 0);
+    return max + 1;
+  };
+
+  const añadirRamo = async () => {
+    const tpr = parseInt(rTallosPorRamo) || 0;
+    const peso = parseFloat(rPeso) || 0;
+    if (!cama || !rParcelaSel || !rTratamiento.trim() || tpr <= 0 || peso <= 0) return;
+    const numero = siguienteNumeroRamo(rParcelaSel, rTratamiento);
+    const { error } = await supabase.from("ramos_peso").insert({
+      cama, parcela: rParcelaSel, tratamiento: rTratamiento.trim(),
+      numero, tallos_por_ramo: tpr, peso_g: peso,
+    });
+    if (error) { toast.error(error.message); return; }
+    setRTallosPorRamo(""); setRPeso("");
+    toast.success(`Ramo ${numero} registrado`);
+  };
+
+  const limpiarRamos = async () => {
+    if (!confirm("¿Eliminar TODOS los registros de peso de ramo?")) return;
+    const { error } = await supabase.from("ramos_peso").delete().not("id", "is", null);
     if (error) toast.error(error.message);
   };
 
