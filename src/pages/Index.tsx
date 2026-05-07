@@ -520,6 +520,50 @@ const Index = () => {
                 </div>
               )}
             </section>
+
+            <section className="border-2 border-lapis bg-white">
+              <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
+                <span className="font-mono text-xs uppercase font-bold text-lapis">Peso de ramo — registros guardados</span>
+                {ramosPeso.length > 0 && (
+                  <button onClick={limpiarRamos} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>
+                )}
+              </div>
+              {ramosPeso.length === 0 ? (
+                <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full font-mono text-xs">
+                    <thead className="bg-lapis text-background">
+                      <tr>
+                        <th className="text-left p-3 uppercase">Cama</th>
+                        <th className="text-left p-3 uppercase">Parcela</th>
+                        <th className="text-left p-3 uppercase">Tratamiento</th>
+                        <th className="text-right p-3 uppercase">Ramo #</th>
+                        <th className="text-right p-3 uppercase">Tallos/ramo</th>
+                        <th className="text-right p-3 uppercase">Peso (g)</th>
+                        <th className="text-right p-3 uppercase">Peso/tallo (g)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...ramosPeso].sort((a, b) =>
+                        a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) ||
+                        a.tratamiento.localeCompare(b.tratamiento) || a.numero - b.numero
+                      ).map((r) => (
+                        <tr key={r.id} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{r.cama}</td>
+                          <td className="p-3 font-bold text-lapis">Parcela {r.parcela}</td>
+                          <td className="p-3 text-lapis">{r.tratamiento}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">Ramo {r.numero}</td>
+                          <td className="p-3 text-right">{r.tallos_por_ramo}</td>
+                          <td className="p-3 text-right">{r.peso_g}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">{r.tallos_por_ramo > 0 ? (r.peso_g / r.tallos_por_ramo).toFixed(2) : "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
           </>
         ) : (
         <>
