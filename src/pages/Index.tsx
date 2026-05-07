@@ -66,6 +66,14 @@ const Index = () => {
   type Tallo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; longitud_cm: number; botones: number; fecha: string };
   const [tallos, setTallos] = useState<Tallo[]>([]);
 
+  // Peso de ramo
+  const [rParcelaSel, setRParcelaSel] = useState<string>("");
+  const [rTratamiento, setRTratamiento] = useState<string>("");
+  const [rTallosPorRamo, setRTallosPorRamo] = useState<string>("");
+  const [rPeso, setRPeso] = useState<string>("");
+  type Ramo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; tallos_por_ramo: number; peso_g: number; fecha: string };
+  const [ramosPeso, setRamosPeso] = useState<Ramo[]>([]);
+
   const load = async () => {
     const all: Siembra[] = [];
     const pageSize = 1000;
@@ -91,10 +99,11 @@ const Index = () => {
   }, []);
 
   const loadRegistros = async () => {
-    const [{ data: prod }, { data: perd }, { data: tlls }] = await Promise.all([
+    const [{ data: prod }, { data: perd }, { data: tlls }, { data: rmps }] = await Promise.all([
       supabase.from("productividad").select("*").order("created_at", { ascending: false }),
       supabase.from("perdidas").select("*").order("created_at", { ascending: false }),
       supabase.from("tallos").select("*").order("created_at", { ascending: false }),
+      supabase.from("ramos_peso").select("*").order("created_at", { ascending: false }),
     ]);
     if (prod) setRegistros(prod.map((r: any) => ({
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
@@ -109,6 +118,10 @@ const Index = () => {
       id: r.id, cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento,
       numero: r.numero, longitud_cm: Number(r.longitud_cm), botones: r.botones, fecha: r.created_at,
     })));
+    if (rmps) setRamosPeso(rmps.map((r: any) => ({
+      id: r.id, cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento,
+      numero: r.numero, tallos_por_ramo: r.tallos_por_ramo, peso_g: Number(r.peso_g), fecha: r.created_at,
+    })));
   };
 
   useEffect(() => {
@@ -117,6 +130,7 @@ const Index = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "productividad" }, () => loadRegistros())
       .on("postgres_changes", { event: "*", schema: "public", table: "perdidas" }, () => loadRegistros())
       .on("postgres_changes", { event: "*", schema: "public", table: "tallos" }, () => loadRegistros())
+      .on("postgres_changes", { event: "*", schema: "public", table: "ramos_peso" }, () => loadRegistros())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
@@ -302,6 +316,50 @@ const Index = () => {
     if (error) toast.error(error.message);
   };
 
+  const acumuladosRamos = useMemo(() => {
+    const m = new Map<string, { cama: string; parcela: string; tratamiento: string; n: number; sumTallos: number; sumPeso: number }>();
+    ramosPeso.forEach((r) => {
+      const key = `${r.cama}||${r.parcela}||${r.tratamiento}`;
+      const cur = m.get(key) ?? { cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento, n: 0, sumTallos: 0, sumPeso: 0 };
+      cur.n += 1;
+      cur.sumTallos += r.tallos_por_ramo;
+      cur.sumPeso += r.peso_g;
+      m.set(key, cur);
+    });
+    return Array.from(m.values()).sort((a, b) =>
+      a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) || a.tratamiento.localeCompare(b.tratamiento)
+    );
+  }, [ramosPeso]);
+
+  const siguienteNumeroRamo = (parcela: string, tratamiento: string) => {
+    if (!cama || !parcela || !tratamiento.trim()) return 1;
+    const t = tratamiento.trim();
+    const max = ramosPeso
+      .filter((r) => r.cama === cama && r.parcela === parcela && r.tratamiento === t)
+      .reduce((acc, r) => Math.max(acc, r.numero), 0);
+    return max + 1;
+  };
+
+  const añadirRamo = async () => {
+    const tpr = parseInt(rTallosPorRamo) || 0;
+    const peso = parseFloat(rPeso) || 0;
+    if (!cama || !rParcelaSel || !rTratamiento.trim() || tpr <= 0 || peso <= 0) return;
+    const numero = siguienteNumeroRamo(rParcelaSel, rTratamiento);
+    const { error } = await supabase.from("ramos_peso").insert({
+      cama, parcela: rParcelaSel, tratamiento: rTratamiento.trim(),
+      numero, tallos_por_ramo: tpr, peso_g: peso,
+    });
+    if (error) { toast.error(error.message); return; }
+    setRTallosPorRamo(""); setRPeso("");
+    toast.success(`Ramo ${numero} registrado`);
+  };
+
+  const limpiarRamos = async () => {
+    if (!confirm("¿Eliminar TODOS los registros de peso de ramo?")) return;
+    const { error } = await supabase.from("ramos_peso").delete().not("id", "is", null);
+    if (error) toast.error(error.message);
+  };
+
   const limpiarTodo = async () => {
     if (!confirm("¿Eliminar TODAS las siembras de la base de datos?")) return;
     const { error } = await supabase.from("siembras").delete().not("id", "is", null);
@@ -455,6 +513,50 @@ const Index = () => {
                           <td className="p-3 text-right text-accent-orange font-bold">Tallo {t.numero}</td>
                           <td className="p-3 text-right">{t.longitud_cm}</td>
                           <td className="p-3 text-right">{t.botones}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            <section className="border-2 border-lapis bg-white">
+              <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
+                <span className="font-mono text-xs uppercase font-bold text-lapis">Peso de ramo — registros guardados</span>
+                {ramosPeso.length > 0 && (
+                  <button onClick={limpiarRamos} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>
+                )}
+              </div>
+              {ramosPeso.length === 0 ? (
+                <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full font-mono text-xs">
+                    <thead className="bg-lapis text-background">
+                      <tr>
+                        <th className="text-left p-3 uppercase">Cama</th>
+                        <th className="text-left p-3 uppercase">Parcela</th>
+                        <th className="text-left p-3 uppercase">Tratamiento</th>
+                        <th className="text-right p-3 uppercase">Ramo #</th>
+                        <th className="text-right p-3 uppercase">Tallos/ramo</th>
+                        <th className="text-right p-3 uppercase">Peso (g)</th>
+                        <th className="text-right p-3 uppercase">Peso/tallo (g)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...ramosPeso].sort((a, b) =>
+                        a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) ||
+                        a.tratamiento.localeCompare(b.tratamiento) || a.numero - b.numero
+                      ).map((r) => (
+                        <tr key={r.id} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{r.cama}</td>
+                          <td className="p-3 font-bold text-lapis">Parcela {r.parcela}</td>
+                          <td className="p-3 text-lapis">{r.tratamiento}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">Ramo {r.numero}</td>
+                          <td className="p-3 text-right">{r.tallos_por_ramo}</td>
+                          <td className="p-3 text-right">{r.peso_g}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">{r.tallos_por_ramo > 0 ? (r.peso_g / r.tallos_por_ramo).toFixed(2) : "—"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -865,6 +967,106 @@ const Index = () => {
                           <td className="p-3 text-right text-accent-orange font-bold">{a.n}</td>
                           <td className="p-3 text-right">{(a.sumLong / a.n).toFixed(1)}</td>
                           <td className="p-3 text-right">{(a.sumBot / a.n).toFixed(1)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Peso de ramo */}
+        {cama && nParcelas > 0 && (
+          <section className="border-2 border-lapis bg-white">
+            <div className="border-b-2 border-lapis p-4">
+              <span className="font-mono text-xs uppercase font-bold text-lapis">06 // Peso de ramo</span>
+            </div>
+            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Parcela</label>
+                <select value={rParcelaSel} onChange={(e) => setRParcelaSel(e.target.value)}
+                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
+                  <option value="">— Selecciona —</option>
+                  {Array.from({ length: nParcelas }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>Parcela {n}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Tratamiento</label>
+                <input type="text" value={rTratamiento} onChange={(e) => setRTratamiento(e.target.value)}
+                  placeholder="Nombre del tratamiento"
+                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+              </div>
+              {rParcelaSel && rTratamiento.trim() && (
+                <>
+                  <div>
+                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">
+                      Tallos por ramo — Ramo {siguienteNumeroRamo(rParcelaSel, rTratamiento)}
+                    </label>
+                    <input type="number" min="0" value={rTallosPorRamo} onChange={(e) => setRTallosPorRamo(e.target.value)}
+                      placeholder="Tallos / ramo"
+                      className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+                  </div>
+                  <div>
+                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Peso del ramo (g)</label>
+                    <input type="number" min="0" step="0.1" value={rPeso} onChange={(e) => setRPeso(e.target.value)}
+                      placeholder="g"
+                      className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+                  </div>
+                  {(parseInt(rTallosPorRamo) || 0) > 0 && (parseFloat(rPeso) || 0) > 0 && (
+                    <div className="md:col-span-2 border-2 border-lapis bg-accent-orange/10 p-6 flex items-center justify-between gap-4 flex-wrap">
+                      <div>
+                        <span className="font-mono text-xs uppercase text-muted-foreground">Próximo registro · Peso/tallo</span>
+                        <div className="mt-2 text-4xl font-extrabold tracking-tighter text-accent-orange">
+                          Ramo {siguienteNumeroRamo(rParcelaSel, rTratamiento)} · {((parseFloat(rPeso) || 0) / (parseInt(rTallosPorRamo) || 1)).toFixed(2)} g
+                        </div>
+                        <span className="font-mono text-[10px] text-muted-foreground">Cama {cama} · Parcela {rParcelaSel} · {rTratamiento} · {rTallosPorRamo} tallos · {rPeso} g</span>
+                      </div>
+                      <button
+                        onClick={añadirRamo}
+                        className="font-mono text-xs uppercase tracking-widest bg-lapis text-background px-6 py-3 hover:bg-accent-orange transition-colors"
+                      >
+                        Añadir
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            {acumuladosRamos.length > 0 && (
+              <div className="border-t-2 border-lapis">
+                <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
+                  <span className="font-mono text-xs uppercase font-bold text-lapis">Acumulado por cama, parcela y tratamiento</span>
+                  <button onClick={limpiarRamos} className="font-mono text-xs uppercase text-accent-orange hover:underline">
+                    Limpiar
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full font-mono text-xs">
+                    <thead className="bg-lapis text-background">
+                      <tr>
+                        <th className="text-left p-3 uppercase">Cama</th>
+                        <th className="text-left p-3 uppercase">Parcela</th>
+                        <th className="text-left p-3 uppercase">Tratamiento</th>
+                        <th className="text-right p-3 uppercase">N° ramos</th>
+                        <th className="text-right p-3 uppercase">Total tallos</th>
+                        <th className="text-right p-3 uppercase">Peso total (g)</th>
+                        <th className="text-right p-3 uppercase">Peso/tallo (g)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {acumuladosRamos.map((a) => (
+                        <tr key={`${a.cama}-${a.parcela}-${a.tratamiento}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{a.cama}</td>
+                          <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td>
+                          <td className="p-3 text-lapis">{a.tratamiento}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">{a.n}</td>
+                          <td className="p-3 text-right">{a.sumTallos}</td>
+                          <td className="p-3 text-right">{a.sumPeso.toFixed(1)}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">{a.sumTallos > 0 ? (a.sumPeso / a.sumTallos).toFixed(2) : "—"}</td>
                         </tr>
                       ))}
                     </tbody>
