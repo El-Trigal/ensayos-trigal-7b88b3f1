@@ -58,6 +58,14 @@ const Index = () => {
   type Perdida = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; fecha: string };
   const [perdidas, setPerdidas] = useState<Perdida[]>([]);
 
+  // Longitud y puntos
+  const [lParcelaSel, setLParcelaSel] = useState<string>("");
+  const [lTratamiento, setLTratamiento] = useState<string>("");
+  const [lLongitud, setLLongitud] = useState<string>("");
+  const [lBotones, setLBotones] = useState<string>("");
+  type Tallo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; longitud_cm: number; botones: number; fecha: string };
+  const [tallos, setTallos] = useState<Tallo[]>([]);
+
   const load = async () => {
     const all: Siembra[] = [];
     const pageSize = 1000;
@@ -83,9 +91,10 @@ const Index = () => {
   }, []);
 
   const loadRegistros = async () => {
-    const [{ data: prod }, { data: perd }] = await Promise.all([
+    const [{ data: prod }, { data: perd }, { data: tlls }] = await Promise.all([
       supabase.from("productividad").select("*").order("created_at", { ascending: false }),
       supabase.from("perdidas").select("*").order("created_at", { ascending: false }),
+      supabase.from("tallos").select("*").order("created_at", { ascending: false }),
     ]);
     if (prod) setRegistros(prod.map((r: any) => ({
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
@@ -96,6 +105,10 @@ const Index = () => {
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
       tratamiento: r.tratamiento, causa: r.causa, tallos: r.tallos, fecha: r.created_at,
     })));
+    if (tlls) setTallos(tlls.map((r: any) => ({
+      id: r.id, cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento,
+      numero: r.numero, longitud_cm: Number(r.longitud_cm), botones: r.botones, fecha: r.created_at,
+    })));
   };
 
   useEffect(() => {
@@ -103,6 +116,7 @@ const Index = () => {
     const ch = supabase.channel("registros-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "productividad" }, () => loadRegistros())
       .on("postgres_changes", { event: "*", schema: "public", table: "perdidas" }, () => loadRegistros())
+      .on("postgres_changes", { event: "*", schema: "public", table: "tallos" }, () => loadRegistros())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
@@ -244,6 +258,50 @@ const Index = () => {
     if (error) toast.error(error.message);
   };
 
+  const acumuladosTallos = useMemo(() => {
+    const m = new Map<string, { cama: string; parcela: string; tratamiento: string; n: number; sumLong: number; sumBot: number }>();
+    tallos.forEach((r) => {
+      const key = `${r.cama}||${r.parcela}||${r.tratamiento}`;
+      const cur = m.get(key) ?? { cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento, n: 0, sumLong: 0, sumBot: 0 };
+      cur.n += 1;
+      cur.sumLong += r.longitud_cm;
+      cur.sumBot += r.botones;
+      m.set(key, cur);
+    });
+    return Array.from(m.values()).sort((a, b) =>
+      a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) || a.tratamiento.localeCompare(b.tratamiento)
+    );
+  }, [tallos]);
+
+  const siguienteNumeroTallo = (parcela: string, tratamiento: string) => {
+    if (!cama || !parcela || !tratamiento.trim()) return 1;
+    const t = tratamiento.trim();
+    const max = tallos
+      .filter((r) => r.cama === cama && r.parcela === parcela && r.tratamiento === t)
+      .reduce((acc, r) => Math.max(acc, r.numero), 0);
+    return max + 1;
+  };
+
+  const añadirTallo = async () => {
+    const lon = parseFloat(lLongitud) || 0;
+    const bot = parseInt(lBotones) || 0;
+    if (!cama || !lParcelaSel || !lTratamiento.trim() || lon <= 0 || bot < 0) return;
+    const numero = siguienteNumeroTallo(lParcelaSel, lTratamiento);
+    const { error } = await supabase.from("tallos").insert({
+      cama, parcela: lParcelaSel, tratamiento: lTratamiento.trim(),
+      numero, longitud_cm: lon, botones: bot,
+    });
+    if (error) { toast.error(error.message); return; }
+    setLLongitud(""); setLBotones("");
+    toast.success(`Tallo ${numero} registrado`);
+  };
+
+  const limpiarTallos = async () => {
+    if (!confirm("¿Eliminar TODOS los registros de longitud y puntos?")) return;
+    const { error } = await supabase.from("tallos").delete().not("id", "is", null);
+    if (error) toast.error(error.message);
+  };
+
   const limpiarTodo = async () => {
     if (!confirm("¿Eliminar TODAS las siembras de la base de datos?")) return;
     const { error } = await supabase.from("siembras").delete().not("id", "is", null);
@@ -355,6 +413,48 @@ const Index = () => {
                           <td className="p-3 text-lapis">{a.causa}</td>
                           <td className="p-3 text-right">{a.n}</td>
                           <td className="p-3 text-right text-accent-orange font-bold">{a.tallos.toLocaleString("es")}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            <section className="border-2 border-lapis bg-white">
+              <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
+                <span className="font-mono text-xs uppercase font-bold text-lapis">Longitud y puntos — registros guardados</span>
+                {tallos.length > 0 && (
+                  <button onClick={limpiarTallos} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>
+                )}
+              </div>
+              {tallos.length === 0 ? (
+                <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full font-mono text-xs">
+                    <thead className="bg-lapis text-background">
+                      <tr>
+                        <th className="text-left p-3 uppercase">Cama</th>
+                        <th className="text-left p-3 uppercase">Parcela</th>
+                        <th className="text-left p-3 uppercase">Tratamiento</th>
+                        <th className="text-right p-3 uppercase">Tallo #</th>
+                        <th className="text-right p-3 uppercase">Longitud (cm)</th>
+                        <th className="text-right p-3 uppercase">Botones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...tallos].sort((a, b) =>
+                        a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) ||
+                        a.tratamiento.localeCompare(b.tratamiento) || a.numero - b.numero
+                      ).map((t) => (
+                        <tr key={t.id} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{t.cama}</td>
+                          <td className="p-3 font-bold text-lapis">Parcela {t.parcela}</td>
+                          <td className="p-3 text-lapis">{t.tratamiento}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">Tallo {t.numero}</td>
+                          <td className="p-3 text-right">{t.longitud_cm}</td>
+                          <td className="p-3 text-right">{t.botones}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -669,6 +769,102 @@ const Index = () => {
                           <td className="p-3 text-lapis">{a.causa}</td>
                           <td className="p-3 text-right">{a.n}</td>
                           <td className="p-3 text-right text-accent-orange font-bold">{a.tallos.toLocaleString("es")}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Longitud y puntos */}
+        {cama && nParcelas > 0 && (
+          <section className="border-2 border-lapis bg-white">
+            <div className="border-b-2 border-lapis p-4">
+              <span className="font-mono text-xs uppercase font-bold text-lapis">05 // Longitud y puntos</span>
+            </div>
+            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Parcela</label>
+                <select value={lParcelaSel} onChange={(e) => setLParcelaSel(e.target.value)}
+                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
+                  <option value="">— Selecciona —</option>
+                  {Array.from({ length: nParcelas }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>Parcela {n}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Tratamiento</label>
+                <input type="text" value={lTratamiento} onChange={(e) => setLTratamiento(e.target.value)}
+                  placeholder="Nombre del tratamiento"
+                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+              </div>
+              {lParcelaSel && lTratamiento.trim() && (
+                <>
+                  <div>
+                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">
+                      Longitud del tallo (cm) — Tallo {siguienteNumeroTallo(lParcelaSel, lTratamiento)}
+                    </label>
+                    <input type="number" min="0" step="0.1" value={lLongitud} onChange={(e) => setLLongitud(e.target.value)}
+                      placeholder="cm"
+                      className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+                  </div>
+                  <div>
+                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">N° de botones florales</label>
+                    <input type="number" min="0" value={lBotones} onChange={(e) => setLBotones(e.target.value)}
+                      placeholder="Botones"
+                      className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
+                  </div>
+                  {(parseFloat(lLongitud) || 0) > 0 && lBotones !== "" && (
+                    <div className="md:col-span-2 border-2 border-lapis bg-accent-orange/10 p-6 flex items-center justify-between gap-4 flex-wrap">
+                      <div>
+                        <span className="font-mono text-xs uppercase text-muted-foreground">Próximo registro</span>
+                        <div className="mt-2 text-4xl font-extrabold tracking-tighter text-accent-orange">Tallo {siguienteNumeroTallo(lParcelaSel, lTratamiento)}</div>
+                        <span className="font-mono text-[10px] text-muted-foreground">Cama {cama} · Parcela {lParcelaSel} · {lTratamiento} · {lLongitud} cm · {lBotones} botones</span>
+                      </div>
+                      <button
+                        onClick={añadirTallo}
+                        className="font-mono text-xs uppercase tracking-widest bg-lapis text-background px-6 py-3 hover:bg-accent-orange transition-colors"
+                      >
+                        Añadir
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            {acumuladosTallos.length > 0 && (
+              <div className="border-t-2 border-lapis">
+                <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
+                  <span className="font-mono text-xs uppercase font-bold text-lapis">Acumulado por cama, parcela y tratamiento</span>
+                  <button onClick={limpiarTallos} className="font-mono text-xs uppercase text-accent-orange hover:underline">
+                    Limpiar
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full font-mono text-xs">
+                    <thead className="bg-lapis text-background">
+                      <tr>
+                        <th className="text-left p-3 uppercase">Cama</th>
+                        <th className="text-left p-3 uppercase">Parcela</th>
+                        <th className="text-left p-3 uppercase">Tratamiento</th>
+                        <th className="text-right p-3 uppercase">N° tallos</th>
+                        <th className="text-right p-3 uppercase">Prom. longitud (cm)</th>
+                        <th className="text-right p-3 uppercase">Prom. botones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {acumuladosTallos.map((a) => (
+                        <tr key={`${a.cama}-${a.parcela}-${a.tratamiento}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{a.cama}</td>
+                          <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td>
+                          <td className="p-3 text-lapis">{a.tratamiento}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">{a.n}</td>
+                          <td className="p-3 text-right">{(a.sumLong / a.n).toFixed(1)}</td>
+                          <td className="p-3 text-right">{(a.sumBot / a.n).toFixed(1)}</td>
                         </tr>
                       ))}
                     </tbody>

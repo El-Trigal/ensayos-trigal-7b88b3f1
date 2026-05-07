@@ -146,6 +146,42 @@ export type Database = {
         }
         Relationships: []
       }
+      tallos: {
+        Row: {
+          botones: number
+          cama: string
+          created_at: string
+          id: string
+          longitud_cm: number
+          numero: number
+          parcela: string
+          tratamiento: string
+          variedad: string | null
+        }
+        Insert: {
+          botones?: number
+          cama: string
+          created_at?: string
+          id?: string
+          longitud_cm?: number
+          numero: number
+          parcela: string
+          tratamiento: string
+          variedad?: string | null
+        }
+        Update: {
+          botones?: number
+          cama?: string
+          created_at?: string
+          id?: string
+          longitud_cm?: number
+          numero?: number
+          parcela?: string
+          tratamiento?: string
+          variedad?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
