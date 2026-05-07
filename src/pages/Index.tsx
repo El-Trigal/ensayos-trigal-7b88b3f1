@@ -420,6 +420,48 @@ const Index = () => {
                 </div>
               )}
             </section>
+
+            <section className="border-2 border-lapis bg-white">
+              <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
+                <span className="font-mono text-xs uppercase font-bold text-lapis">Longitud y puntos — registros guardados</span>
+                {tallos.length > 0 && (
+                  <button onClick={limpiarTallos} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>
+                )}
+              </div>
+              {tallos.length === 0 ? (
+                <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full font-mono text-xs">
+                    <thead className="bg-lapis text-background">
+                      <tr>
+                        <th className="text-left p-3 uppercase">Cama</th>
+                        <th className="text-left p-3 uppercase">Parcela</th>
+                        <th className="text-left p-3 uppercase">Tratamiento</th>
+                        <th className="text-right p-3 uppercase">Tallo #</th>
+                        <th className="text-right p-3 uppercase">Longitud (cm)</th>
+                        <th className="text-right p-3 uppercase">Botones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...tallos].sort((a, b) =>
+                        a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) ||
+                        a.tratamiento.localeCompare(b.tratamiento) || a.numero - b.numero
+                      ).map((t) => (
+                        <tr key={t.id} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{t.cama}</td>
+                          <td className="p-3 font-bold text-lapis">Parcela {t.parcela}</td>
+                          <td className="p-3 text-lapis">{t.tratamiento}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">Tallo {t.numero}</td>
+                          <td className="p-3 text-right">{t.longitud_cm}</td>
+                          <td className="p-3 text-right">{t.botones}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
           </>
         ) : (
         <>
