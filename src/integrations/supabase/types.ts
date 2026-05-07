@@ -110,6 +110,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ramos_peso: {
+        Row: {
+          cama: string
+          created_at: string
+          id: string
+          numero: number
+          parcela: string
+          peso_g: number
+          tallos_por_ramo: number
+          tratamiento: string
+        }
+        Insert: {
+          cama: string
+          created_at?: string
+          id?: string
+          numero: number
+          parcela: string
+          peso_g?: number
+          tallos_por_ramo?: number
+          tratamiento: string
+        }
+        Update: {
+          cama?: string
+          created_at?: string
+          id?: string
+          numero?: number
+          parcela?: string
+          peso_g?: number
+          tallos_por_ramo?: number
+          tratamiento?: string
+        }
+        Relationships: []
+      }
       siembras: {
         Row: {
           bloque: number
