@@ -2,6 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  buildSiembrasMap,
+  exportProductividad,
+  exportPerdidas,
+  exportTallos,
+  exportRamos,
+} from "@/lib/exportRegistros";
 
 type Siembra = {
   id: string;
@@ -73,6 +80,15 @@ const Index = () => {
   const [rPeso, setRPeso] = useState<string>("");
   type Ramo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; tallos_por_ramo: number; peso_g: number; fecha: string };
   const [ramosPeso, setRamosPeso] = useState<Ramo[]>([]);
+
+  const siembrasMap = useMemo(() => buildSiembrasMap(data as any), [data]);
+
+  const dl = {
+    prod: (fmt: "xlsx" | "csv") => exportProductividad(registros as any, siembrasMap, fmt),
+    perd: (fmt: "xlsx" | "csv") => exportPerdidas(perdidas as any, registros as any, siembrasMap, fmt),
+    tallos: (fmt: "xlsx" | "csv") => exportTallos(tallos as any, siembrasMap, fmt),
+    ramos: (fmt: "xlsx" | "csv") => exportRamos(ramosPeso as any, siembrasMap, fmt),
+  };
 
   const load = async () => {
     const all: Siembra[] = [];
@@ -400,9 +416,13 @@ const Index = () => {
             <section className="border-2 border-lapis bg-white">
               <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
                 <span className="font-mono text-xs uppercase font-bold text-lapis">Productividad — registros guardados</span>
-                {acumulados.length > 0 && (
-                  <button onClick={limpiarProductividad} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>
-                )}
+                <div className="flex items-center gap-3">
+                  <button onClick={() => dl.prod("xlsx")} disabled={registros.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ Excel</button>
+                  <button onClick={() => dl.prod("csv")} disabled={registros.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ CSV</button>
+                  {acumulados.length > 0 && (
+                    <button onClick={limpiarProductividad} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>
+                  )}
+                </div>
               </div>
               {acumulados.length === 0 ? (
                 <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div>
@@ -441,9 +461,13 @@ const Index = () => {
             <section className="border-2 border-lapis bg-white">
               <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
                 <span className="font-mono text-xs uppercase font-bold text-lapis">Pérdidas — registros guardados</span>
-                {acumuladosPerdidas.length > 0 && (
-                  <button onClick={limpiarPerdidas} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>
-                )}
+                <div className="flex items-center gap-3">
+                  <button onClick={() => dl.perd("xlsx")} disabled={perdidas.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ Excel</button>
+                  <button onClick={() => dl.perd("csv")} disabled={perdidas.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ CSV</button>
+                  {acumuladosPerdidas.length > 0 && (
+                    <button onClick={limpiarPerdidas} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>
+                  )}
+                </div>
               </div>
               {acumuladosPerdidas.length === 0 ? (
                 <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div>
@@ -482,9 +506,13 @@ const Index = () => {
             <section className="border-2 border-lapis bg-white">
               <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
                 <span className="font-mono text-xs uppercase font-bold text-lapis">Longitud y puntos — registros guardados</span>
-                {tallos.length > 0 && (
-                  <button onClick={limpiarTallos} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>
-                )}
+                <div className="flex items-center gap-3">
+                  <button onClick={() => dl.tallos("xlsx")} disabled={tallos.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ Excel</button>
+                  <button onClick={() => dl.tallos("csv")} disabled={tallos.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ CSV</button>
+                  {tallos.length > 0 && (
+                    <button onClick={limpiarTallos} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>
+                  )}
+                </div>
               </div>
               {tallos.length === 0 ? (
                 <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div>
@@ -524,9 +552,13 @@ const Index = () => {
             <section className="border-2 border-lapis bg-white">
               <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
                 <span className="font-mono text-xs uppercase font-bold text-lapis">Peso de ramo — registros guardados</span>
-                {ramosPeso.length > 0 && (
-                  <button onClick={limpiarRamos} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>
-                )}
+                <div className="flex items-center gap-3">
+                  <button onClick={() => dl.ramos("xlsx")} disabled={ramosPeso.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ Excel</button>
+                  <button onClick={() => dl.ramos("csv")} disabled={ramosPeso.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ CSV</button>
+                  {ramosPeso.length > 0 && (
+                    <button onClick={limpiarRamos} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>
+                  )}
+                </div>
               </div>
               {ramosPeso.length === 0 ? (
                 <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div>
