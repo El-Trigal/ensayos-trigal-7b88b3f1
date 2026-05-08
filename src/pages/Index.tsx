@@ -415,7 +415,7 @@ const Index = () => {
           <>
             <section className="border-2 border-lapis bg-white">
               <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
-                <span className="font-mono text-xs uppercase font-bold text-lapis">Productividad — registros guardados</span>
+                <span className="font-mono text-xs uppercase font-bold text-lapis">PRODUCTIVIDAD</span>
                 <div className="flex items-center gap-3">
                   <button onClick={() => dl.prod("xlsx")} disabled={registros.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ Excel</button>
                   <button onClick={() => dl.prod("csv")} disabled={registros.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ CSV</button>
@@ -460,7 +460,7 @@ const Index = () => {
 
             <section className="border-2 border-lapis bg-white">
               <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
-                <span className="font-mono text-xs uppercase font-bold text-lapis">Pérdidas — registros guardados</span>
+                <span className="font-mono text-xs uppercase font-bold text-lapis">PÉRDIDAS</span>
                 <div className="flex items-center gap-3">
                   <button onClick={() => dl.perd("xlsx")} disabled={perdidas.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ Excel</button>
                   <button onClick={() => dl.perd("csv")} disabled={perdidas.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ CSV</button>
@@ -505,7 +505,7 @@ const Index = () => {
 
             <section className="border-2 border-lapis bg-white">
               <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
-                <span className="font-mono text-xs uppercase font-bold text-lapis">Longitud y puntos — registros guardados</span>
+                <span className="font-mono text-xs uppercase font-bold text-lapis">LONGITUD Y PUNTOS</span>
                 <div className="flex items-center gap-3">
                   <button onClick={() => dl.tallos("xlsx")} disabled={tallos.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ Excel</button>
                   <button onClick={() => dl.tallos("csv")} disabled={tallos.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ CSV</button>
@@ -551,7 +551,7 @@ const Index = () => {
 
             <section className="border-2 border-lapis bg-white">
               <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
-                <span className="font-mono text-xs uppercase font-bold text-lapis">Peso de ramo — registros guardados</span>
+                <span className="font-mono text-xs uppercase font-bold text-lapis">PESO DE RAMO</span>
                 <div className="flex items-center gap-3">
                   <button onClick={() => dl.ramos("xlsx")} disabled={ramosPeso.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ Excel</button>
                   <button onClick={() => dl.ramos("csv")} disabled={ramosPeso.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30 disabled:cursor-not-allowed">↓ CSV</button>
@@ -654,7 +654,7 @@ const Index = () => {
           {(bloque || cama) && variedades.length > 0 && (
             <div className="border-t-2 border-lapis p-8 flex items-start gap-8 bg-white">
               <div className="shrink-0">
-                <span className="font-mono text-xs uppercase text-muted-foreground">A // Variedades</span>
+                <span className="font-mono text-xs uppercase text-muted-foreground">A // VARIEDADES</span>
                 <div className="mt-4 text-5xl font-extrabold tracking-tighter text-lapis">{variedades.length}</div>
               </div>
               <ul className="flex-1 border-l-2 border-lapis pl-6 space-y-1 font-mono text-xs text-lapis max-h-40 overflow-y-auto">
@@ -670,13 +670,13 @@ const Index = () => {
           {cama && (
             <div className="border-t-2 border-lapis p-8 grid grid-cols-1 md:grid-cols-2 gap-6 bg-lapis/5">
               <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Parcelas</label>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">PARCELAS</label>
                 <input type="number" min="0" value={parcelas} onChange={(e) => setParcelas(e.target.value)}
                   placeholder="N° de parcelas"
                   className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
               </div>
               <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Plantas por parcela</label>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">PLANTAS POR PARCELA</label>
                 <input type="number" min="0" value={plantasPorParcela} onChange={(e) => setPlantasPorParcela(e.target.value)}
                   placeholder="Plantas / parcela"
                   className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
@@ -684,16 +684,16 @@ const Index = () => {
               {(nParcelas > 0 && nPlantasParc > 0) && (
                 <div className="md:col-span-2 grid grid-cols-3 border-2 border-lapis bg-white">
                   <div className="p-6 border-r-2 border-lapis">
-                    <span className="font-mono text-xs uppercase text-muted-foreground">Total cama</span>
+                    <span className="font-mono text-xs uppercase text-muted-foreground">TOTAL CAMA</span>
                     <div className="mt-2 text-3xl font-extrabold tracking-tighter text-lapis">{totalPlantas.toLocaleString("es")}</div>
                   </div>
                   <div className="p-6 border-r-2 border-lapis">
-                    <span className="font-mono text-xs uppercase text-muted-foreground">Experimento</span>
+                    <span className="font-mono text-xs uppercase text-muted-foreground">EXPERIMENTO</span>
                     <div className="mt-2 text-3xl font-extrabold tracking-tighter text-lapis">{plantasExperimento.toLocaleString("es")}</div>
                     <span className="font-mono text-[10px] text-muted-foreground">{nParcelas} × {nPlantasParc}</span>
                   </div>
                   <div className="p-6 bg-accent-orange/10">
-                    <span className="font-mono text-xs uppercase text-muted-foreground">Efecto borde</span>
+                    <span className="font-mono text-xs uppercase text-muted-foreground">EFECTO BORDE</span>
                     <div className="mt-2 text-3xl font-extrabold tracking-tighter text-accent-orange">{efectoBorde.toLocaleString("es")}</div>
                     <span className="font-mono text-[10px] text-muted-foreground">{totalPlantas > 0 ? ((efectoBorde / totalPlantas) * 100).toFixed(1) : 0}% del total</span>
                   </div>
@@ -707,7 +707,7 @@ const Index = () => {
         {cama && nParcelas > 0 && (
           <section className="border-2 border-lapis bg-white">
             <div className="border-b-2 border-lapis p-4">
-              <span className="font-mono text-xs uppercase font-bold text-lapis">03 // Productividad</span>
+              <span className="font-mono text-xs uppercase font-bold text-lapis">PRODUCTIVIDAD</span>
             </div>
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -811,7 +811,7 @@ const Index = () => {
         {cama && nParcelas > 0 && (
           <section className="border-2 border-lapis bg-white">
             <div className="border-b-2 border-lapis p-4">
-              <span className="font-mono text-xs uppercase font-bold text-lapis">04 // Pérdidas</span>
+              <span className="font-mono text-xs uppercase font-bold text-lapis">PÉRDIDAS</span>
             </div>
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -917,7 +917,7 @@ const Index = () => {
         {cama && nParcelas > 0 && (
           <section className="border-2 border-lapis bg-white">
             <div className="border-b-2 border-lapis p-4">
-              <span className="font-mono text-xs uppercase font-bold text-lapis">05 // Longitud y puntos</span>
+              <span className="font-mono text-xs uppercase font-bold text-lapis">LONGITUD Y PUNTOS</span>
             </div>
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -1013,7 +1013,7 @@ const Index = () => {
         {cama && nParcelas > 0 && (
           <section className="border-2 border-lapis bg-white">
             <div className="border-b-2 border-lapis p-4">
-              <span className="font-mono text-xs uppercase font-bold text-lapis">06 // Peso de ramo</span>
+              <span className="font-mono text-xs uppercase font-bold text-lapis">PESO DE RAMO</span>
             </div>
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -1125,7 +1125,7 @@ const Index = () => {
 
       <footer className="max-w-7xl mx-auto mt-24 pt-8 border-t-2 border-lapis flex justify-between items-center font-mono text-xs text-muted-foreground">
         <span>Aplicativo de ensayos · Siembras en tiempo real</span>
-        <span>Lapislázuli Edition</span>
+        <span>Innovación Flores el Trigal</span>
       </footer>
     </div>
   );
