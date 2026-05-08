@@ -2,6 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  buildSiembrasMap,
+  exportProductividad,
+  exportPerdidas,
+  exportTallos,
+  exportRamos,
+} from "@/lib/exportRegistros";
 
 type Siembra = {
   id: string;
