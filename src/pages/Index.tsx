@@ -386,11 +386,11 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground p-6 md:p-12">
       <nav className="max-w-7xl mx-auto flex flex-wrap gap-4 justify-between items-end border-b-2 border-lapis pb-6 mb-12">
         <div>
-          <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Sistema de Siembras v1.0</span>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter uppercase text-lapis">DATA_ESTRUCTURA</h1>
+          <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Flores el trigal</span>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter uppercase text-lapis">Aplicativo de ensayos</h1>
         </div>
         <div className="flex gap-6 font-mono text-xs uppercase">
-          <span className="text-muted-foreground">Total registros:</span>
+          <span className="text-muted-foreground">Total inventario:</span>
           <span className="text-accent-orange">{data.length.toLocaleString("es")}</span>
         </div>
       </nav>
@@ -602,7 +602,7 @@ const Index = () => {
         {/* Carga */}
         <section className="border-2 border-lapis bg-white">
           <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
-            <span className="font-mono text-xs uppercase font-bold text-lapis">01 // Cargar Inventario de Siembras</span>
+            <span className="font-mono text-xs uppercase font-bold text-lapis">Cargar Inventario de Siembras</span>
             {data.length > 0 && (
               <button onClick={limpiarTodo} className="font-mono text-xs uppercase text-accent-orange hover:underline">
                 Limpiar base
@@ -631,7 +631,7 @@ const Index = () => {
         {/* Consulta */}
         <section className="border-2 border-lapis bg-white">
           <div className="border-b-2 border-lapis p-4">
-            <span className="font-mono text-xs uppercase font-bold text-lapis">02 // Consulta por Bloque y Cama</span>
+            <span className="font-mono text-xs uppercase font-bold text-lapis">Consulta por Bloque y Cama</span>
           </div>
           <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -1124,7 +1124,7 @@ const Index = () => {
       </main>
 
       <footer className="max-w-7xl mx-auto mt-24 pt-8 border-t-2 border-lapis flex justify-between items-center font-mono text-xs text-muted-foreground">
-        <span>DATA_ESTRUCTURA · Siembras en tiempo real</span>
+        <span>Aplicativo de ensayos · Siembras en tiempo real</span>
         <span>Lapislázuli Edition</span>
       </footer>
     </div>
