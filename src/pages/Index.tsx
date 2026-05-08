@@ -602,17 +602,17 @@ const Index = () => {
         {/* Carga */}
         <section className="border-2 border-lapis bg-white">
           <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
-            <span className="font-mono text-xs uppercase font-bold text-lapis">Cargar Inventario de Siembras</span>
+            <span className="font-mono text-xs uppercase font-bold text-lapis">CARGAR INVENTARIO DE SIEMBRAS</span>
             {data.length > 0 && (
               <button onClick={limpiarTodo} className="font-mono text-xs uppercase text-accent-orange hover:underline">
-                Limpiar base
+                LIMPIAR BASE
               </button>
             )}
           </div>
           <div className="p-8">
             <label className="block">
               <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3 block">
-                Archivo de siembra (.xlsx) — columnas: bloque, cm, semana, fecha, producto, nom_flor, plantas
+                ARCHIVO DE SIEMBRA (.XLSX) — COLUMNAS: BLOQUE, CM, SEMANA, FECHA, PRODUCTO, NOM_FLOR, PLANTAS
               </span>
               <div className="border-2 border-dashed border-lapis hover:border-accent-orange transition-colors p-8 text-center cursor-pointer">
                 <input type="file" accept=".xlsx,.xls,.csv" className="hidden" id="file-input"
@@ -631,11 +631,11 @@ const Index = () => {
         {/* Consulta */}
         <section className="border-2 border-lapis bg-white">
           <div className="border-b-2 border-lapis p-4">
-            <span className="font-mono text-xs uppercase font-bold text-lapis">Consulta por Bloque y Cama</span>
+            <span className="font-mono text-xs uppercase font-bold text-lapis">CONSULTA POR BLOQUE Y CAMA</span>
           </div>
           <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Bloque</label>
+              <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">BLOQUE</label>
               <select value={bloque} onChange={(e) => { setBloque(e.target.value); setCama(""); }}
                 className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
                 <option value="">— Todos —</option>
@@ -643,7 +643,7 @@ const Index = () => {
               </select>
             </div>
             <div>
-              <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Cama (cm)</label>
+              <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">CAMA (CM)</label>
               <select value={cama} onChange={(e) => setCama(e.target.value)}
                 className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
                 <option value="">— Todas —</option>
@@ -711,7 +711,7 @@ const Index = () => {
             </div>
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Variedad</label>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">VARIEDAD</label>
                 <select value={variedadSel} onChange={(e) => setVariedadSel(e.target.value)}
                   className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
                   <option value="">— Selecciona —</option>
@@ -719,7 +719,7 @@ const Index = () => {
                 </select>
               </div>
               <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Parcela</label>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">PARCELA</label>
                 <select value={parcelaSel} onChange={(e) => setParcelaSel(e.target.value)}
                   className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
                   <option value="">— Selecciona —</option>
@@ -729,7 +729,7 @@ const Index = () => {
                 </select>
               </div>
               <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Tratamiento</label>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">TRATAMIENTO</label>
                 <input type="text" value={tratamiento} onChange={(e) => setTratamiento(e.target.value)}
                   placeholder="Nombre del tratamiento"
                   className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
@@ -769,9 +769,9 @@ const Index = () => {
             {acumulados.length > 0 && (
               <div className="border-t-2 border-lapis">
                 <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
-                  <span className="font-mono text-xs uppercase font-bold text-lapis">Acumulado por cama, variedad, parcela y tratamiento</span>
+                  <span className="font-mono text-xs uppercase font-bold text-lapis">ACUMULADO POR CAMA, VARIEDAD, PARCELA Y TRATAMIENTO</span>
                   <button onClick={limpiarProductividad} className="font-mono text-xs uppercase text-accent-orange hover:underline">
-                    Limpiar
+                    LIMPIAR
                   </button>
                 </div>
                 <div className="overflow-x-auto">
