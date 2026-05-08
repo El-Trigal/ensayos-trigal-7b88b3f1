@@ -81,6 +81,15 @@ const Index = () => {
   type Ramo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; tallos_por_ramo: number; peso_g: number; fecha: string };
   const [ramosPeso, setRamosPeso] = useState<Ramo[]>([]);
 
+  const siembrasMap = useMemo(() => buildSiembrasMap(data as any), [data]);
+
+  const dl = {
+    prod: (fmt: "xlsx" | "csv") => exportProductividad(registros as any, siembrasMap, fmt),
+    perd: (fmt: "xlsx" | "csv") => exportPerdidas(perdidas as any, registros as any, siembrasMap, fmt),
+    tallos: (fmt: "xlsx" | "csv") => exportTallos(tallos as any, siembrasMap, fmt),
+    ramos: (fmt: "xlsx" | "csv") => exportRamos(ramosPeso as any, siembrasMap, fmt),
+  };
+
   const load = async () => {
     const all: Siembra[] = [];
     const pageSize = 1000;
