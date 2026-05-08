@@ -815,7 +815,7 @@ const Index = () => {
             </div>
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Variedad</label>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">VARIEDAD</label>
                 <select value={pVariedadSel} onChange={(e) => setPVariedadSel(e.target.value)}
                   className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
                   <option value="">— Selecciona —</option>
@@ -823,7 +823,7 @@ const Index = () => {
                 </select>
               </div>
               <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Parcela</label>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">PARCELA</label>
                 <select value={pParcelaSel} onChange={(e) => setPParcelaSel(e.target.value)}
                   className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
                   <option value="">— Selecciona —</option>
@@ -833,7 +833,7 @@ const Index = () => {
                 </select>
               </div>
               <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Tratamiento</label>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">TRATAMIENTO</label>
                 <input type="text" value={pTratamiento} onChange={(e) => setPTratamiento(e.target.value)}
                   placeholder="Nombre del tratamiento"
                   className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
@@ -841,7 +841,7 @@ const Index = () => {
               {pVariedadSel && pParcelaSel && pTratamiento.trim() && (
                 <>
                   <div>
-                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Causa</label>
+                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">CAUSA</label>
                     <select value={pCausa} onChange={(e) => setPCausa(e.target.value)}
                       className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
                       <option value="">— Selecciona —</option>
@@ -875,9 +875,9 @@ const Index = () => {
             {acumuladosPerdidas.length > 0 && (
               <div className="border-t-2 border-lapis">
                 <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
-                  <span className="font-mono text-xs uppercase font-bold text-lapis">Acumulado de pérdidas por cama, variedad, parcela, tratamiento y causa</span>
+                  <span className="font-mono text-xs uppercase font-bold text-lapis">ACUMULADO DE PÉRDIDAS POR CAMA, VARIEDAD, PARCELA, TRATAMIENTO Y CAUSA</span>
                   <button onClick={limpiarPerdidas} className="font-mono text-xs uppercase text-accent-orange hover:underline">
-                    Limpiar
+                    LIMPIAR
                   </button>
                 </div>
                 <div className="overflow-x-auto">
@@ -921,7 +921,7 @@ const Index = () => {
             </div>
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Parcela</label>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">PARCELA</label>
                 <select value={lParcelaSel} onChange={(e) => setLParcelaSel(e.target.value)}
                   className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
                   <option value="">— Selecciona —</option>
@@ -931,7 +931,7 @@ const Index = () => {
                 </select>
               </div>
               <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Tratamiento</label>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">TRATAMIENTO</label>
                 <input type="text" value={lTratamiento} onChange={(e) => setLTratamiento(e.target.value)}
                   placeholder="Nombre del tratamiento"
                   className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
@@ -973,9 +973,9 @@ const Index = () => {
             {acumuladosTallos.length > 0 && (
               <div className="border-t-2 border-lapis">
                 <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
-                  <span className="font-mono text-xs uppercase font-bold text-lapis">Acumulado por cama, parcela y tratamiento</span>
+                  <span className="font-mono text-xs uppercase font-bold text-lapis">ACUMULADO POR CAMA, PARCELA Y TRATAMIENTO</span>
                   <button onClick={limpiarTallos} className="font-mono text-xs uppercase text-accent-orange hover:underline">
-                    Limpiar
+                    LIMPIAR
                   </button>
                 </div>
                 <div className="overflow-x-auto">
@@ -1017,7 +1017,7 @@ const Index = () => {
             </div>
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Parcela</label>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">PARCELA</label>
                 <select value={rParcelaSel} onChange={(e) => setRParcelaSel(e.target.value)}
                   className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
                   <option value="">— Selecciona —</option>
@@ -1027,7 +1027,7 @@ const Index = () => {
                 </select>
               </div>
               <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Tratamiento</label>
+                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">TRATAMIENTO</label>
                 <input type="text" value={rTratamiento} onChange={(e) => setRTratamiento(e.target.value)}
                   placeholder="Nombre del tratamiento"
                   className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
@@ -1071,9 +1071,9 @@ const Index = () => {
             {acumuladosRamos.length > 0 && (
               <div className="border-t-2 border-lapis">
                 <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
-                  <span className="font-mono text-xs uppercase font-bold text-lapis">Acumulado por cama, parcela y tratamiento</span>
+                  <span className="font-mono text-xs uppercase font-bold text-lapis">ACUMULADO POR CAMA, PARCELA Y TRATAMIENTO</span>
                   <button onClick={limpiarRamos} className="font-mono text-xs uppercase text-accent-orange hover:underline">
-                    Limpiar
+                    LIMPIAR
                   </button>
                 </div>
                 <div className="overflow-x-auto">
