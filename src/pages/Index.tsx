@@ -40,6 +40,51 @@ const parseExcelDate = (v: any): string | null => {
 };
 
 const Index = () => {
+  // ===== Ensayo activo =====
+  const [ensayoCodigo, setEnsayoCodigo] = useState<string | null>(() => {
+    try { return localStorage.getItem("ensayo_codigo"); } catch { return null; }
+  });
+  const [ensayoModo, setEnsayoModo] = useState<"crear" | "ingresar">("ingresar");
+  const [ensayoInput, setEnsayoInput] = useState("");
+  const [ensayoLoading, setEnsayoLoading] = useState(false);
+
+  const setEnsayoActivo = (codigo: string | null) => {
+    if (codigo) localStorage.setItem("ensayo_codigo", codigo);
+    else localStorage.removeItem("ensayo_codigo");
+    setEnsayoCodigo(codigo);
+  };
+
+  const crearEnsayo = async () => {
+    const c = ensayoInput.trim();
+    if (!/^\d{5}$/.test(c)) { toast.error("El código debe tener exactamente 5 dígitos numéricos"); return; }
+    setEnsayoLoading(true);
+    const { data: ex } = await supabase.from("ensayos").select("codigo").eq("codigo", c).maybeSingle();
+    if (ex) { setEnsayoLoading(false); toast.error("Ya existe un ensayo con ese código"); return; }
+    const { error } = await supabase.from("ensayos").insert({ codigo: c });
+    setEnsayoLoading(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Ensayo ${c} creado`);
+    setEnsayoInput("");
+    setEnsayoActivo(c);
+  };
+
+  const ingresarEnsayo = async () => {
+    const c = ensayoInput.trim();
+    if (!/^\d{5}$/.test(c)) { toast.error("El código debe tener exactamente 5 dígitos numéricos"); return; }
+    setEnsayoLoading(true);
+    const { data: ex, error } = await supabase.from("ensayos").select("codigo").eq("codigo", c).maybeSingle();
+    setEnsayoLoading(false);
+    if (error) { toast.error(error.message); return; }
+    if (!ex) { toast.error("El ensayo no existe. Verifica el código o crea un nuevo ensayo."); return; }
+    setEnsayoInput("");
+    setEnsayoActivo(c);
+  };
+
+  const salirEnsayo = () => {
+    setEnsayoActivo(null);
+    setData([]); setRegistros([]); setPerdidas([]); setTallos([]); setRamosPeso([]);
+  };
+
   const [data, setData] = useState<Siembra[]>([]);
   const [loading, setLoading] = useState(false);
   const [vista, setVista] = useState<"inventario" | "registros">("inventario");
@@ -91,12 +136,14 @@ const Index = () => {
   };
 
   const load = async () => {
+    if (!ensayoCodigo) { setData([]); return; }
     const all: Siembra[] = [];
     const pageSize = 1000;
     for (let from = 0; ; from += pageSize) {
       const { data, error } = await supabase
         .from("siembras")
         .select("*")
+        .eq("ensayo_codigo", ensayoCodigo)
         .order("bloque")
         .range(from, from + pageSize - 1);
       if (error) { toast.error(error.message); return; }
@@ -107,19 +154,23 @@ const Index = () => {
   };
 
   useEffect(() => {
+    if (!ensayoCodigo) return;
     load();
     const ch = supabase.channel("siembras-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "siembras" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [ensayoCodigo]);
 
   const loadRegistros = async () => {
+    if (!ensayoCodigo) {
+      setRegistros([]); setPerdidas([]); setTallos([]); setRamosPeso([]); return;
+    }
     const [{ data: prod }, { data: perd }, { data: tlls }, { data: rmps }] = await Promise.all([
-      supabase.from("productividad").select("*").order("created_at", { ascending: false }),
-      supabase.from("perdidas").select("*").order("created_at", { ascending: false }),
-      supabase.from("tallos").select("*").order("created_at", { ascending: false }),
-      supabase.from("ramos_peso").select("*").order("created_at", { ascending: false }),
+      supabase.from("productividad").select("*").eq("ensayo_codigo", ensayoCodigo).order("created_at", { ascending: false }),
+      supabase.from("perdidas").select("*").eq("ensayo_codigo", ensayoCodigo).order("created_at", { ascending: false }),
+      supabase.from("tallos").select("*").eq("ensayo_codigo", ensayoCodigo).order("created_at", { ascending: false }),
+      supabase.from("ramos_peso").select("*").eq("ensayo_codigo", ensayoCodigo).order("created_at", { ascending: false }),
     ]);
     if (prod) setRegistros(prod.map((r: any) => ({
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
@@ -141,6 +192,7 @@ const Index = () => {
   };
 
   useEffect(() => {
+    if (!ensayoCodigo) return;
     loadRegistros();
     const ch = supabase.channel("registros-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "productividad" }, () => loadRegistros())
@@ -149,9 +201,10 @@ const Index = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "ramos_peso" }, () => loadRegistros())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [ensayoCodigo]);
 
   const handleFile = async (file: File) => {
+    if (!ensayoCodigo) return;
     setLoading(true);
     try {
       const buf = await file.arrayBuffer();
@@ -171,6 +224,7 @@ const Index = () => {
           producto: norm.producto ? String(norm.producto) : null,
           nom_flor: String(norm.nom_flor ?? norm["nom flor"] ?? "").trim(),
           plantas: parseInt(String(norm.plantas)) || 0,
+          ensayo_codigo: ensayoCodigo,
         };
       }).filter((r) => !isNaN(r.bloque) && r.cm && r.nom_flor);
 
@@ -240,11 +294,13 @@ const Index = () => {
   }, [registros]);
 
   const añadirRegistro = async () => {
+    if (!ensayoCodigo) return;
     if (!cama || !variedadSel || !parcelaSel || !tratamiento.trim() || nRamos <= 0 || nTallos <= 0) return;
     const { error } = await supabase.from("productividad").insert({
       cama, variedad: variedadSel, parcela: parcelaSel,
       tratamiento: tratamiento.trim(), ramos: nRamos,
       tallos_por_ramo: nTallos, total: nRamos * nTallos,
+      ensayo_codigo: ensayoCodigo,
     });
     if (error) { toast.error(error.message); return; }
     setRamos(""); setTallosPorRamo("");
@@ -266,11 +322,13 @@ const Index = () => {
   }, [perdidas]);
 
   const añadirPerdida = async () => {
+    if (!ensayoCodigo) return;
     const t = parseInt(pTallos) || 0;
     if (!cama || !pVariedadSel || !pParcelaSel || !pTratamiento.trim() || !pCausa || t <= 0) return;
     const { error } = await supabase.from("perdidas").insert({
       cama, variedad: pVariedadSel, parcela: pParcelaSel,
       tratamiento: pTratamiento.trim(), causa: pCausa, tallos: t,
+      ensayo_codigo: ensayoCodigo,
     });
     if (error) { toast.error(error.message); return; }
     setPTallos("");
@@ -278,13 +336,15 @@ const Index = () => {
   };
 
   const limpiarProductividad = async () => {
+    if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de productividad?")) return;
-    const { error } = await supabase.from("productividad").delete().not("id", "is", null);
+    const { error } = await supabase.from("productividad").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
   };
   const limpiarPerdidas = async () => {
+    if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de pérdidas?")) return;
-    const { error } = await supabase.from("perdidas").delete().not("id", "is", null);
+    const { error } = await supabase.from("perdidas").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
   };
 
@@ -313,6 +373,7 @@ const Index = () => {
   };
 
   const añadirTallo = async () => {
+    if (!ensayoCodigo) return;
     const lon = parseFloat(lLongitud) || 0;
     const bot = parseInt(lBotones) || 0;
     if (!cama || !lParcelaSel || !lTratamiento.trim() || lon <= 0 || bot < 0) return;
@@ -320,6 +381,7 @@ const Index = () => {
     const { error } = await supabase.from("tallos").insert({
       cama, parcela: lParcelaSel, tratamiento: lTratamiento.trim(),
       numero, longitud_cm: lon, botones: bot,
+      ensayo_codigo: ensayoCodigo,
     });
     if (error) { toast.error(error.message); return; }
     setLLongitud(""); setLBotones("");
@@ -327,8 +389,9 @@ const Index = () => {
   };
 
   const limpiarTallos = async () => {
+    if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de longitud y puntos?")) return;
-    const { error } = await supabase.from("tallos").delete().not("id", "is", null);
+    const { error } = await supabase.from("tallos").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
   };
 
@@ -357,6 +420,7 @@ const Index = () => {
   };
 
   const añadirRamo = async () => {
+    if (!ensayoCodigo) return;
     const tpr = parseInt(rTallosPorRamo) || 0;
     const peso = parseFloat(rPeso) || 0;
     if (!cama || !rParcelaSel || !rTratamiento.trim() || tpr <= 0 || peso <= 0) return;
@@ -364,6 +428,7 @@ const Index = () => {
     const { error } = await supabase.from("ramos_peso").insert({
       cama, parcela: rParcelaSel, tratamiento: rTratamiento.trim(),
       numero, tallos_por_ramo: tpr, peso_g: peso,
+      ensayo_codigo: ensayoCodigo,
     });
     if (error) { toast.error(error.message); return; }
     setRTallosPorRamo(""); setRPeso("");
@@ -371,14 +436,16 @@ const Index = () => {
   };
 
   const limpiarRamos = async () => {
+    if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de peso de ramo?")) return;
-    const { error } = await supabase.from("ramos_peso").delete().not("id", "is", null);
+    const { error } = await supabase.from("ramos_peso").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
   };
 
   const limpiarTodo = async () => {
+    if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODAS las siembras de la base de datos?")) return;
-    const { error } = await supabase.from("siembras").delete().not("id", "is", null);
+    const { error } = await supabase.from("siembras").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message); else toast.success("Base de datos limpiada");
   };
 
@@ -389,12 +456,65 @@ const Index = () => {
           <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Flores el trigal</span>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter uppercase text-lapis">Aplicativo de ensayos</h1>
         </div>
-        <div className="flex gap-6 font-mono text-xs uppercase">
-          <span className="text-muted-foreground">Total inventario:</span>
-          <span className="text-accent-orange">{data.length.toLocaleString("es")}</span>
-        </div>
+        {ensayoCodigo && (
+          <div className="flex gap-6 items-center font-mono text-xs uppercase">
+            <span className="text-muted-foreground">Ensayo:</span>
+            <span className="text-accent-orange font-bold">{ensayoCodigo}</span>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-muted-foreground">Total inventario:</span>
+            <span className="text-accent-orange">{data.length.toLocaleString("es")}</span>
+            <button onClick={salirEnsayo} className="ml-2 border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background transition-colors">Salir</button>
+          </div>
+        )}
       </nav>
 
+      {!ensayoCodigo ? (
+        <main className="max-w-xl mx-auto">
+          <div className="border-2 border-lapis bg-white">
+            <div className="flex border-b-2 border-lapis">
+              <button
+                onClick={() => { setEnsayoModo("crear"); setEnsayoInput(""); }}
+                className={`flex-1 font-mono text-xs uppercase tracking-widest px-6 py-4 transition-colors ${ensayoModo === "crear" ? "bg-lapis text-background" : "text-lapis hover:bg-accent-orange/10"}`}
+              >
+                Crear ensayo
+              </button>
+              <button
+                onClick={() => { setEnsayoModo("ingresar"); setEnsayoInput(""); }}
+                className={`flex-1 font-mono text-xs uppercase tracking-widest px-6 py-4 transition-colors ${ensayoModo === "ingresar" ? "bg-lapis text-background" : "text-lapis hover:bg-accent-orange/10"}`}
+              >
+                Ingresar a ensayo
+              </button>
+            </div>
+            <div className="p-8 space-y-4">
+              <label className="font-mono text-xs uppercase tracking-widest text-muted-foreground block">
+                Código de ensayo (5 dígitos)
+              </label>
+              <input
+                inputMode="numeric"
+                pattern="\d{5}"
+                maxLength={5}
+                value={ensayoInput}
+                onChange={(e) => setEnsayoInput(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                onKeyDown={(e) => { if (e.key === "Enter") (ensayoModo === "crear" ? crearEnsayo : ingresarEnsayo)(); }}
+                placeholder="12345"
+                className="w-full border-2 border-lapis bg-background px-4 py-3 font-mono text-2xl tracking-[0.5em] text-center text-lapis focus:outline-none focus:bg-accent-orange/5"
+              />
+              <button
+                onClick={ensayoModo === "crear" ? crearEnsayo : ingresarEnsayo}
+                disabled={ensayoLoading || ensayoInput.length !== 5}
+                className="w-full bg-lapis text-background font-mono text-xs uppercase tracking-widest px-6 py-3 hover:bg-accent-orange disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                {ensayoLoading ? "..." : ensayoModo === "crear" ? "Crear ensayo" : "Ingresar"}
+              </button>
+              <p className="font-mono text-xs text-muted-foreground leading-relaxed">
+                {ensayoModo === "crear"
+                  ? "Crea un nuevo ensayo con un código único de 5 dígitos. Cualquiera con ese código podrá colaborar."
+                  : "Ingresa el código de 5 dígitos de un ensayo existente para acceder a sus datos."}
+              </p>
+            </div>
+          </div>
+        </main>
+      ) : (
       <main className="max-w-7xl mx-auto space-y-8">
         <div className="flex gap-2 border-2 border-lapis bg-white p-2">
           <button
@@ -1122,6 +1242,7 @@ const Index = () => {
         </>
         )}
       </main>
+      )}
 
       <footer className="max-w-7xl mx-auto mt-24 pt-8 border-t-2 border-lapis flex justify-between items-center font-mono text-xs text-muted-foreground">
         <span>Aplicativo de ensayos v 1.0</span>

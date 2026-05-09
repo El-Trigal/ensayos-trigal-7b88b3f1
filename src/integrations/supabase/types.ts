@@ -41,11 +41,27 @@ export type Database = {
         }
         Relationships: []
       }
+      ensayos: {
+        Row: {
+          codigo: string
+          created_at: string
+        }
+        Insert: {
+          codigo: string
+          created_at?: string
+        }
+        Update: {
+          codigo?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       perdidas: {
         Row: {
           cama: string
           causa: string
           created_at: string
+          ensayo_codigo: string | null
           id: string
           parcela: string
           tallos: number
@@ -56,6 +72,7 @@ export type Database = {
           cama: string
           causa: string
           created_at?: string
+          ensayo_codigo?: string | null
           id?: string
           parcela: string
           tallos?: number
@@ -66,6 +83,7 @@ export type Database = {
           cama?: string
           causa?: string
           created_at?: string
+          ensayo_codigo?: string | null
           id?: string
           parcela?: string
           tallos?: number
@@ -78,6 +96,7 @@ export type Database = {
         Row: {
           cama: string
           created_at: string
+          ensayo_codigo: string | null
           id: string
           parcela: string
           ramos: number
@@ -89,6 +108,7 @@ export type Database = {
         Insert: {
           cama: string
           created_at?: string
+          ensayo_codigo?: string | null
           id?: string
           parcela: string
           ramos?: number
@@ -100,6 +120,7 @@ export type Database = {
         Update: {
           cama?: string
           created_at?: string
+          ensayo_codigo?: string | null
           id?: string
           parcela?: string
           ramos?: number
@@ -114,6 +135,7 @@ export type Database = {
         Row: {
           cama: string
           created_at: string
+          ensayo_codigo: string | null
           id: string
           numero: number
           parcela: string
@@ -124,6 +146,7 @@ export type Database = {
         Insert: {
           cama: string
           created_at?: string
+          ensayo_codigo?: string | null
           id?: string
           numero: number
           parcela: string
@@ -134,6 +157,7 @@ export type Database = {
         Update: {
           cama?: string
           created_at?: string
+          ensayo_codigo?: string | null
           id?: string
           numero?: number
           parcela?: string
@@ -148,6 +172,7 @@ export type Database = {
           bloque: number
           cm: string
           created_at: string
+          ensayo_codigo: string | null
           fecha: string | null
           id: string
           nom_flor: string
@@ -159,6 +184,7 @@ export type Database = {
           bloque: number
           cm: string
           created_at?: string
+          ensayo_codigo?: string | null
           fecha?: string | null
           id?: string
           nom_flor: string
@@ -170,6 +196,7 @@ export type Database = {
           bloque?: number
           cm?: string
           created_at?: string
+          ensayo_codigo?: string | null
           fecha?: string | null
           id?: string
           nom_flor?: string
@@ -184,6 +211,7 @@ export type Database = {
           botones: number
           cama: string
           created_at: string
+          ensayo_codigo: string | null
           id: string
           longitud_cm: number
           numero: number
@@ -195,6 +223,7 @@ export type Database = {
           botones?: number
           cama: string
           created_at?: string
+          ensayo_codigo?: string | null
           id?: string
           longitud_cm?: number
           numero: number
@@ -206,6 +235,7 @@ export type Database = {
           botones?: number
           cama?: string
           created_at?: string
+          ensayo_codigo?: string | null
           id?: string
           longitud_cm?: number
           numero?: number
