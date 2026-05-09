@@ -58,34 +58,40 @@ export type Database = {
       }
       perdidas: {
         Row: {
+          bloque: number | null
           cama: string
           causa: string
           created_at: string
           ensayo_codigo: string | null
           id: string
           parcela: string
+          plantas_iniciales: number | null
           tallos: number
           tratamiento: string
           variedad: string
         }
         Insert: {
+          bloque?: number | null
           cama: string
           causa: string
           created_at?: string
           ensayo_codigo?: string | null
           id?: string
           parcela: string
+          plantas_iniciales?: number | null
           tallos?: number
           tratamiento: string
           variedad: string
         }
         Update: {
+          bloque?: number | null
           cama?: string
           causa?: string
           created_at?: string
           ensayo_codigo?: string | null
           id?: string
           parcela?: string
+          plantas_iniciales?: number | null
           tallos?: number
           tratamiento?: string
           variedad?: string
@@ -94,6 +100,7 @@ export type Database = {
       }
       productividad: {
         Row: {
+          bloque: number | null
           cama: string
           created_at: string
           ensayo_codigo: string | null
@@ -106,6 +113,7 @@ export type Database = {
           variedad: string
         }
         Insert: {
+          bloque?: number | null
           cama: string
           created_at?: string
           ensayo_codigo?: string | null
@@ -118,6 +126,7 @@ export type Database = {
           variedad: string
         }
         Update: {
+          bloque?: number | null
           cama?: string
           created_at?: string
           ensayo_codigo?: string | null
@@ -133,6 +142,7 @@ export type Database = {
       }
       ramos_peso: {
         Row: {
+          bloque: number | null
           cama: string
           created_at: string
           ensayo_codigo: string | null
@@ -144,6 +154,7 @@ export type Database = {
           tratamiento: string
         }
         Insert: {
+          bloque?: number | null
           cama: string
           created_at?: string
           ensayo_codigo?: string | null
@@ -155,6 +166,7 @@ export type Database = {
           tratamiento: string
         }
         Update: {
+          bloque?: number | null
           cama?: string
           created_at?: string
           ensayo_codigo?: string | null
@@ -208,6 +220,7 @@ export type Database = {
       }
       tallos: {
         Row: {
+          bloque: number | null
           botones: number
           cama: string
           created_at: string
@@ -220,6 +233,7 @@ export type Database = {
           variedad: string | null
         }
         Insert: {
+          bloque?: number | null
           botones?: number
           cama: string
           created_at?: string
@@ -232,6 +246,7 @@ export type Database = {
           variedad?: string | null
         }
         Update: {
+          bloque?: number | null
           botones?: number
           cama?: string
           created_at?: string
