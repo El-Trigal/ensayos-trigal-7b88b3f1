@@ -175,19 +175,22 @@ const Index = () => {
     if (prod) setRegistros(prod.map((r: any) => ({
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
       tratamiento: r.tratamiento, ramos: r.ramos, tallos: r.tallos_por_ramo,
-      total: r.total, fecha: r.created_at,
+      total: r.total, fecha: r.created_at, bloque: r.bloque ?? null,
     })));
     if (perd) setPerdidas(perd.map((r: any) => ({
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
       tratamiento: r.tratamiento, causa: r.causa, tallos: r.tallos, fecha: r.created_at,
+      bloque: r.bloque ?? null, plantas_iniciales: r.plantas_iniciales ?? null,
     })));
     if (tlls) setTallos(tlls.map((r: any) => ({
       id: r.id, cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento,
       numero: r.numero, longitud_cm: Number(r.longitud_cm), botones: r.botones, fecha: r.created_at,
+      bloque: r.bloque ?? null,
     })));
     if (rmps) setRamosPeso(rmps.map((r: any) => ({
       id: r.id, cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento,
       numero: r.numero, tallos_por_ramo: r.tallos_por_ramo, peso_g: Number(r.peso_g), fecha: r.created_at,
+      bloque: r.bloque ?? null,
     })));
   };
 
