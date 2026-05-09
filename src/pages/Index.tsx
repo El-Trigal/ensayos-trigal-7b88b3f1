@@ -1242,6 +1242,7 @@ const Index = () => {
         </>
         )}
       </main>
+      )}
 
       <footer className="max-w-7xl mx-auto mt-24 pt-8 border-t-2 border-lapis flex justify-between items-center font-mono text-xs text-muted-foreground">
         <span>Aplicativo de ensayos v 1.0</span>
