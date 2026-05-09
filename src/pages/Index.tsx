@@ -97,7 +97,7 @@ const Index = () => {
   const [ramos, setRamos] = useState<string>("");
   const [tallosPorRamo, setTallosPorRamo] = useState<string>("");
   const [variedadSel, setVariedadSel] = useState<string>("");
-  type Registro = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; fecha: string };
+  type Registro = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; fecha: string; bloque: number | null };
   const [registros, setRegistros] = useState<Registro[]>([]);
 
   // Pérdidas
@@ -107,7 +107,7 @@ const Index = () => {
   const [pTratamiento, setPTratamiento] = useState<string>("");
   const [pCausa, setPCausa] = useState<string>("");
   const [pTallos, setPTallos] = useState<string>("");
-  type Perdida = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; fecha: string };
+  type Perdida = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; fecha: string; bloque: number | null; plantas_iniciales: number | null };
   const [perdidas, setPerdidas] = useState<Perdida[]>([]);
 
   // Longitud y puntos
@@ -115,7 +115,7 @@ const Index = () => {
   const [lTratamiento, setLTratamiento] = useState<string>("");
   const [lLongitud, setLLongitud] = useState<string>("");
   const [lBotones, setLBotones] = useState<string>("");
-  type Tallo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; longitud_cm: number; botones: number; fecha: string };
+  type Tallo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; longitud_cm: number; botones: number; fecha: string; bloque: number | null };
   const [tallos, setTallos] = useState<Tallo[]>([]);
 
   // Peso de ramo
@@ -123,7 +123,7 @@ const Index = () => {
   const [rTratamiento, setRTratamiento] = useState<string>("");
   const [rTallosPorRamo, setRTallosPorRamo] = useState<string>("");
   const [rPeso, setRPeso] = useState<string>("");
-  type Ramo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; tallos_por_ramo: number; peso_g: number; fecha: string };
+  type Ramo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; tallos_por_ramo: number; peso_g: number; fecha: string; bloque: number | null };
   const [ramosPeso, setRamosPeso] = useState<Ramo[]>([]);
 
   const siembrasMap = useMemo(() => buildSiembrasMap(data as any), [data]);
