@@ -110,6 +110,7 @@ const downloadFile = (
 export type ProdRow = {
   cama: string; variedad: string; parcela: string; tratamiento: string;
   ramos: number; tallos: number; total: number; fecha: string;
+  bloque?: number | null;
 };
 
 export const exportProductividad = (
@@ -132,7 +133,7 @@ export const exportProductividad = (
       getISOWeek(fechaCorte),
       daysBetween(info.fechaSiembra, fechaCorte),
       r.variedad ?? info.variedad ?? "",
-      info.bloque ?? "",
+      r.bloque ?? info.bloque ?? "",
       numero,
       lado,
       r.parcela,
@@ -149,6 +150,8 @@ export const exportProductividad = (
 export type PerdRow = {
   cama: string; variedad: string; parcela: string; tratamiento: string;
   causa: string; tallos: number; fecha: string;
+  bloque?: number | null;
+  plantas_iniciales?: number | null;
 };
 
 const CAUSAS_EXPORT = [
@@ -194,6 +197,8 @@ export const exportPerdidas = (
     fechaCorte: string;
     porCausa: Record<string, number>;
     total: number;
+    bloque: number | null;
+    plantasIni: number | null;
   };
   const groups = new Map<string, Group>();
   for (const p of perdidas) {
@@ -203,9 +208,13 @@ export const exportPerdidas = (
       g = {
         cama: p.cama, variedad: p.variedad, parcela: p.parcela, tratamiento: p.tratamiento,
         fechaCorte: fmtDate(p.fecha), porCausa: {}, total: 0,
+        bloque: p.bloque ?? null,
+        plantasIni: p.plantas_iniciales ?? null,
       };
       groups.set(key, g);
     }
+    if (g.bloque == null && p.bloque != null) g.bloque = p.bloque;
+    if (g.plantasIni == null && p.plantas_iniciales != null) g.plantasIni = p.plantas_iniciales;
     const col = causaToColumn[p.causa] ?? p.causa;
     g.porCausa[col] = (g.porCausa[col] ?? 0) + p.tallos;
     g.total += p.tallos;
@@ -213,28 +222,23 @@ export const exportPerdidas = (
   }
 
   // Aprovechados desde productividad
-  const aprovMap = new Map<string, number>();
-  for (const r of productividad) {
-    const key = `${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}`;
-    aprovMap.set(key, (aprovMap.get(key) ?? 0) + (r.total ?? 0));
-  }
-
-  const data = Array.from(groups.entries()).map(([key, g]) => {
+  const data = Array.from(groups.entries()).map(([_key, g]) => {
     const info = lookupSiembra(siembrasMap, g.cama);
     const { numero, lado } = parseCama(g.cama);
-    const aprov = aprovMap.get(key);
+    const plantasIni = g.plantasIni ?? info.plantas ?? null;
+    const aprov = plantasIni != null ? plantasIni - g.total : "";
     const row: any[] = [
       info.fechaSiembra ?? "",
       g.fechaCorte,
       getISOWeek(g.fechaCorte),
       g.variedad || info.variedad || "",
-      info.bloque ?? "",
+      g.bloque ?? info.bloque ?? "",
       numero,
       g.parcela,
       lado,
       g.tratamiento,
-      info.plantas ?? "",
-      aprov ?? "",
+      plantasIni ?? "",
+      aprov,
       g.total,
     ];
     for (const c of CAUSAS_EXPORT) row.push(g.porCausa[c] ?? 0);
@@ -248,6 +252,7 @@ export const exportPerdidas = (
 export type TalloRow = {
   cama: string; parcela: string; tratamiento: string;
   numero: number; longitud_cm: number; botones: number; fecha: string;
+  bloque?: number | null;
 };
 
 export const exportTallos = (
@@ -270,7 +275,7 @@ export const exportTallos = (
       getISOWeek(fecha),
       daysBetween(info.fechaSiembra, fecha),
       info.variedad ?? "",
-      info.bloque ?? "",
+      r.bloque ?? info.bloque ?? "",
       numero,
       lado,
       r.parcela,
@@ -287,6 +292,7 @@ export const exportTallos = (
 export type RamoRow = {
   cama: string; parcela: string; tratamiento: string;
   numero: number; tallos_por_ramo: number; peso_g: number; fecha: string;
+  bloque?: number | null;
 };
 
 export const exportRamos = (
@@ -310,7 +316,7 @@ export const exportRamos = (
       getISOWeek(fecha),
       daysBetween(info.fechaSiembra, fecha),
       info.variedad ?? "",
-      info.bloque ?? "",
+      r.bloque ?? info.bloque ?? "",
       numero,
       lado,
       r.parcela,

@@ -97,7 +97,7 @@ const Index = () => {
   const [ramos, setRamos] = useState<string>("");
   const [tallosPorRamo, setTallosPorRamo] = useState<string>("");
   const [variedadSel, setVariedadSel] = useState<string>("");
-  type Registro = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; fecha: string };
+  type Registro = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; fecha: string; bloque: number | null };
   const [registros, setRegistros] = useState<Registro[]>([]);
 
   // Pérdidas
@@ -107,7 +107,7 @@ const Index = () => {
   const [pTratamiento, setPTratamiento] = useState<string>("");
   const [pCausa, setPCausa] = useState<string>("");
   const [pTallos, setPTallos] = useState<string>("");
-  type Perdida = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; fecha: string };
+  type Perdida = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; fecha: string; bloque: number | null; plantas_iniciales: number | null };
   const [perdidas, setPerdidas] = useState<Perdida[]>([]);
 
   // Longitud y puntos
@@ -115,7 +115,7 @@ const Index = () => {
   const [lTratamiento, setLTratamiento] = useState<string>("");
   const [lLongitud, setLLongitud] = useState<string>("");
   const [lBotones, setLBotones] = useState<string>("");
-  type Tallo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; longitud_cm: number; botones: number; fecha: string };
+  type Tallo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; longitud_cm: number; botones: number; fecha: string; bloque: number | null };
   const [tallos, setTallos] = useState<Tallo[]>([]);
 
   // Peso de ramo
@@ -123,7 +123,7 @@ const Index = () => {
   const [rTratamiento, setRTratamiento] = useState<string>("");
   const [rTallosPorRamo, setRTallosPorRamo] = useState<string>("");
   const [rPeso, setRPeso] = useState<string>("");
-  type Ramo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; tallos_por_ramo: number; peso_g: number; fecha: string };
+  type Ramo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; tallos_por_ramo: number; peso_g: number; fecha: string; bloque: number | null };
   const [ramosPeso, setRamosPeso] = useState<Ramo[]>([]);
 
   const siembrasMap = useMemo(() => buildSiembrasMap(data as any), [data]);
@@ -175,19 +175,22 @@ const Index = () => {
     if (prod) setRegistros(prod.map((r: any) => ({
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
       tratamiento: r.tratamiento, ramos: r.ramos, tallos: r.tallos_por_ramo,
-      total: r.total, fecha: r.created_at,
+      total: r.total, fecha: r.created_at, bloque: r.bloque ?? null,
     })));
     if (perd) setPerdidas(perd.map((r: any) => ({
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
       tratamiento: r.tratamiento, causa: r.causa, tallos: r.tallos, fecha: r.created_at,
+      bloque: r.bloque ?? null, plantas_iniciales: r.plantas_iniciales ?? null,
     })));
     if (tlls) setTallos(tlls.map((r: any) => ({
       id: r.id, cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento,
       numero: r.numero, longitud_cm: Number(r.longitud_cm), botones: r.botones, fecha: r.created_at,
+      bloque: r.bloque ?? null,
     })));
     if (rmps) setRamosPeso(rmps.map((r: any) => ({
       id: r.id, cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento,
       numero: r.numero, tallos_por_ramo: r.tallos_por_ramo, peso_g: Number(r.peso_g), fecha: r.created_at,
+      bloque: r.bloque ?? null,
     })));
   };
 
@@ -296,11 +299,12 @@ const Index = () => {
   const añadirRegistro = async () => {
     if (!ensayoCodigo) return;
     if (!cama || !variedadSel || !parcelaSel || !tratamiento.trim() || nRamos <= 0 || nTallos <= 0) return;
+    const bloqueRow = data.find((d) => d.cm === cama)?.bloque ?? null;
     const { error } = await supabase.from("productividad").insert({
       cama, variedad: variedadSel, parcela: parcelaSel,
       tratamiento: tratamiento.trim(), ramos: nRamos,
       tallos_por_ramo: nTallos, total: nRamos * nTallos,
-      ensayo_codigo: ensayoCodigo,
+      ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
     });
     if (error) { toast.error(error.message); return; }
     setRamos(""); setTallosPorRamo("");
@@ -325,10 +329,12 @@ const Index = () => {
     if (!ensayoCodigo) return;
     const t = parseInt(pTallos) || 0;
     if (!cama || !pVariedadSel || !pParcelaSel || !pTratamiento.trim() || !pCausa || t <= 0) return;
+    const bloqueRow = data.find((d) => d.cm === cama)?.bloque ?? null;
+    const plantasIni = nPlantasParc > 0 ? nPlantasParc : null;
     const { error } = await supabase.from("perdidas").insert({
       cama, variedad: pVariedadSel, parcela: pParcelaSel,
       tratamiento: pTratamiento.trim(), causa: pCausa, tallos: t,
-      ensayo_codigo: ensayoCodigo,
+      ensayo_codigo: ensayoCodigo, bloque: bloqueRow, plantas_iniciales: plantasIni,
     });
     if (error) { toast.error(error.message); return; }
     setPTallos("");
@@ -378,10 +384,11 @@ const Index = () => {
     const bot = parseInt(lBotones) || 0;
     if (!cama || !lParcelaSel || !lTratamiento.trim() || lon <= 0 || bot < 0) return;
     const numero = siguienteNumeroTallo(lParcelaSel, lTratamiento);
+    const bloqueRow = data.find((d) => d.cm === cama)?.bloque ?? null;
     const { error } = await supabase.from("tallos").insert({
       cama, parcela: lParcelaSel, tratamiento: lTratamiento.trim(),
       numero, longitud_cm: lon, botones: bot,
-      ensayo_codigo: ensayoCodigo,
+      ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
     });
     if (error) { toast.error(error.message); return; }
     setLLongitud(""); setLBotones("");
@@ -425,10 +432,11 @@ const Index = () => {
     const peso = parseFloat(rPeso) || 0;
     if (!cama || !rParcelaSel || !rTratamiento.trim() || tpr <= 0 || peso <= 0) return;
     const numero = siguienteNumeroRamo(rParcelaSel, rTratamiento);
+    const bloqueRow = data.find((d) => d.cm === cama)?.bloque ?? null;
     const { error } = await supabase.from("ramos_peso").insert({
       cama, parcela: rParcelaSel, tratamiento: rTratamiento.trim(),
       numero, tallos_por_ramo: tpr, peso_g: peso,
-      ensayo_codigo: ensayoCodigo,
+      ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
     });
     if (error) { toast.error(error.message); return; }
     setRTallosPorRamo(""); setRPeso("");
