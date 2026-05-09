@@ -40,6 +40,51 @@ const parseExcelDate = (v: any): string | null => {
 };
 
 const Index = () => {
+  // ===== Ensayo activo =====
+  const [ensayoCodigo, setEnsayoCodigo] = useState<string | null>(() => {
+    try { return localStorage.getItem("ensayo_codigo"); } catch { return null; }
+  });
+  const [ensayoModo, setEnsayoModo] = useState<"crear" | "ingresar">("ingresar");
+  const [ensayoInput, setEnsayoInput] = useState("");
+  const [ensayoLoading, setEnsayoLoading] = useState(false);
+
+  const setEnsayoActivo = (codigo: string | null) => {
+    if (codigo) localStorage.setItem("ensayo_codigo", codigo);
+    else localStorage.removeItem("ensayo_codigo");
+    setEnsayoCodigo(codigo);
+  };
+
+  const crearEnsayo = async () => {
+    const c = ensayoInput.trim();
+    if (!/^\d{5}$/.test(c)) { toast.error("El código debe tener exactamente 5 dígitos numéricos"); return; }
+    setEnsayoLoading(true);
+    const { data: ex } = await supabase.from("ensayos").select("codigo").eq("codigo", c).maybeSingle();
+    if (ex) { setEnsayoLoading(false); toast.error("Ya existe un ensayo con ese código"); return; }
+    const { error } = await supabase.from("ensayos").insert({ codigo: c });
+    setEnsayoLoading(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Ensayo ${c} creado`);
+    setEnsayoInput("");
+    setEnsayoActivo(c);
+  };
+
+  const ingresarEnsayo = async () => {
+    const c = ensayoInput.trim();
+    if (!/^\d{5}$/.test(c)) { toast.error("El código debe tener exactamente 5 dígitos numéricos"); return; }
+    setEnsayoLoading(true);
+    const { data: ex, error } = await supabase.from("ensayos").select("codigo").eq("codigo", c).maybeSingle();
+    setEnsayoLoading(false);
+    if (error) { toast.error(error.message); return; }
+    if (!ex) { toast.error("El ensayo no existe. Verifica el código o crea un nuevo ensayo."); return; }
+    setEnsayoInput("");
+    setEnsayoActivo(c);
+  };
+
+  const salirEnsayo = () => {
+    setEnsayoActivo(null);
+    setData([]); setRegistros([]); setPerdidas([]); setTallos([]); setRamosPeso([]);
+  };
+
   const [data, setData] = useState<Siembra[]>([]);
   const [loading, setLoading] = useState(false);
   const [vista, setVista] = useState<"inventario" | "registros">("inventario");
@@ -91,12 +136,14 @@ const Index = () => {
   };
 
   const load = async () => {
+    if (!ensayoCodigo) { setData([]); return; }
     const all: Siembra[] = [];
     const pageSize = 1000;
     for (let from = 0; ; from += pageSize) {
       const { data, error } = await supabase
         .from("siembras")
         .select("*")
+        .eq("ensayo_codigo", ensayoCodigo)
         .order("bloque")
         .range(from, from + pageSize - 1);
       if (error) { toast.error(error.message); return; }
@@ -107,19 +154,23 @@ const Index = () => {
   };
 
   useEffect(() => {
+    if (!ensayoCodigo) return;
     load();
     const ch = supabase.channel("siembras-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "siembras" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [ensayoCodigo]);
 
   const loadRegistros = async () => {
+    if (!ensayoCodigo) {
+      setRegistros([]); setPerdidas([]); setTallos([]); setRamosPeso([]); return;
+    }
     const [{ data: prod }, { data: perd }, { data: tlls }, { data: rmps }] = await Promise.all([
-      supabase.from("productividad").select("*").order("created_at", { ascending: false }),
-      supabase.from("perdidas").select("*").order("created_at", { ascending: false }),
-      supabase.from("tallos").select("*").order("created_at", { ascending: false }),
-      supabase.from("ramos_peso").select("*").order("created_at", { ascending: false }),
+      supabase.from("productividad").select("*").eq("ensayo_codigo", ensayoCodigo).order("created_at", { ascending: false }),
+      supabase.from("perdidas").select("*").eq("ensayo_codigo", ensayoCodigo).order("created_at", { ascending: false }),
+      supabase.from("tallos").select("*").eq("ensayo_codigo", ensayoCodigo).order("created_at", { ascending: false }),
+      supabase.from("ramos_peso").select("*").eq("ensayo_codigo", ensayoCodigo).order("created_at", { ascending: false }),
     ]);
     if (prod) setRegistros(prod.map((r: any) => ({
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
@@ -141,6 +192,7 @@ const Index = () => {
   };
 
   useEffect(() => {
+    if (!ensayoCodigo) return;
     loadRegistros();
     const ch = supabase.channel("registros-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "productividad" }, () => loadRegistros())
@@ -149,9 +201,10 @@ const Index = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "ramos_peso" }, () => loadRegistros())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [ensayoCodigo]);
 
   const handleFile = async (file: File) => {
+    if (!ensayoCodigo) return;
     setLoading(true);
     try {
       const buf = await file.arrayBuffer();
@@ -171,6 +224,7 @@ const Index = () => {
           producto: norm.producto ? String(norm.producto) : null,
           nom_flor: String(norm.nom_flor ?? norm["nom flor"] ?? "").trim(),
           plantas: parseInt(String(norm.plantas)) || 0,
+          ensayo_codigo: ensayoCodigo,
         };
       }).filter((r) => !isNaN(r.bloque) && r.cm && r.nom_flor);
 
