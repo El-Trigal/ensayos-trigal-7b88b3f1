@@ -456,12 +456,65 @@ const Index = () => {
           <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Flores el trigal</span>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter uppercase text-lapis">Aplicativo de ensayos</h1>
         </div>
-        <div className="flex gap-6 font-mono text-xs uppercase">
-          <span className="text-muted-foreground">Total inventario:</span>
-          <span className="text-accent-orange">{data.length.toLocaleString("es")}</span>
-        </div>
+        {ensayoCodigo && (
+          <div className="flex gap-6 items-center font-mono text-xs uppercase">
+            <span className="text-muted-foreground">Ensayo:</span>
+            <span className="text-accent-orange font-bold">{ensayoCodigo}</span>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-muted-foreground">Total inventario:</span>
+            <span className="text-accent-orange">{data.length.toLocaleString("es")}</span>
+            <button onClick={salirEnsayo} className="ml-2 border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background transition-colors">Salir</button>
+          </div>
+        )}
       </nav>
 
+      {!ensayoCodigo ? (
+        <main className="max-w-xl mx-auto">
+          <div className="border-2 border-lapis bg-white">
+            <div className="flex border-b-2 border-lapis">
+              <button
+                onClick={() => { setEnsayoModo("crear"); setEnsayoInput(""); }}
+                className={`flex-1 font-mono text-xs uppercase tracking-widest px-6 py-4 transition-colors ${ensayoModo === "crear" ? "bg-lapis text-background" : "text-lapis hover:bg-accent-orange/10"}`}
+              >
+                Crear ensayo
+              </button>
+              <button
+                onClick={() => { setEnsayoModo("ingresar"); setEnsayoInput(""); }}
+                className={`flex-1 font-mono text-xs uppercase tracking-widest px-6 py-4 transition-colors ${ensayoModo === "ingresar" ? "bg-lapis text-background" : "text-lapis hover:bg-accent-orange/10"}`}
+              >
+                Ingresar a ensayo
+              </button>
+            </div>
+            <div className="p-8 space-y-4">
+              <label className="font-mono text-xs uppercase tracking-widest text-muted-foreground block">
+                Código de ensayo (5 dígitos)
+              </label>
+              <input
+                inputMode="numeric"
+                pattern="\d{5}"
+                maxLength={5}
+                value={ensayoInput}
+                onChange={(e) => setEnsayoInput(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                onKeyDown={(e) => { if (e.key === "Enter") (ensayoModo === "crear" ? crearEnsayo : ingresarEnsayo)(); }}
+                placeholder="12345"
+                className="w-full border-2 border-lapis bg-background px-4 py-3 font-mono text-2xl tracking-[0.5em] text-center text-lapis focus:outline-none focus:bg-accent-orange/5"
+              />
+              <button
+                onClick={ensayoModo === "crear" ? crearEnsayo : ingresarEnsayo}
+                disabled={ensayoLoading || ensayoInput.length !== 5}
+                className="w-full bg-lapis text-background font-mono text-xs uppercase tracking-widest px-6 py-3 hover:bg-accent-orange disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                {ensayoLoading ? "..." : ensayoModo === "crear" ? "Crear ensayo" : "Ingresar"}
+              </button>
+              <p className="font-mono text-xs text-muted-foreground leading-relaxed">
+                {ensayoModo === "crear"
+                  ? "Crea un nuevo ensayo con un código único de 5 dígitos. Cualquiera con ese código podrá colaborar."
+                  : "Ingresa el código de 5 dígitos de un ensayo existente para acceder a sus datos."}
+              </p>
+            </div>
+          </div>
+        </main>
+      ) : (
       <main className="max-w-7xl mx-auto space-y-8">
         <div className="flex gap-2 border-2 border-lapis bg-white p-2">
           <button
