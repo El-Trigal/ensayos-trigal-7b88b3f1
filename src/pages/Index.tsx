@@ -294,11 +294,13 @@ const Index = () => {
   }, [registros]);
 
   const añadirRegistro = async () => {
+    if (!ensayoCodigo) return;
     if (!cama || !variedadSel || !parcelaSel || !tratamiento.trim() || nRamos <= 0 || nTallos <= 0) return;
     const { error } = await supabase.from("productividad").insert({
       cama, variedad: variedadSel, parcela: parcelaSel,
       tratamiento: tratamiento.trim(), ramos: nRamos,
       tallos_por_ramo: nTallos, total: nRamos * nTallos,
+      ensayo_codigo: ensayoCodigo,
     });
     if (error) { toast.error(error.message); return; }
     setRamos(""); setTallosPorRamo("");
@@ -320,11 +322,13 @@ const Index = () => {
   }, [perdidas]);
 
   const añadirPerdida = async () => {
+    if (!ensayoCodigo) return;
     const t = parseInt(pTallos) || 0;
     if (!cama || !pVariedadSel || !pParcelaSel || !pTratamiento.trim() || !pCausa || t <= 0) return;
     const { error } = await supabase.from("perdidas").insert({
       cama, variedad: pVariedadSel, parcela: pParcelaSel,
       tratamiento: pTratamiento.trim(), causa: pCausa, tallos: t,
+      ensayo_codigo: ensayoCodigo,
     });
     if (error) { toast.error(error.message); return; }
     setPTallos("");
@@ -332,13 +336,15 @@ const Index = () => {
   };
 
   const limpiarProductividad = async () => {
+    if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de productividad?")) return;
-    const { error } = await supabase.from("productividad").delete().not("id", "is", null);
+    const { error } = await supabase.from("productividad").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
   };
   const limpiarPerdidas = async () => {
+    if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de pérdidas?")) return;
-    const { error } = await supabase.from("perdidas").delete().not("id", "is", null);
+    const { error } = await supabase.from("perdidas").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
   };
 
@@ -367,6 +373,7 @@ const Index = () => {
   };
 
   const añadirTallo = async () => {
+    if (!ensayoCodigo) return;
     const lon = parseFloat(lLongitud) || 0;
     const bot = parseInt(lBotones) || 0;
     if (!cama || !lParcelaSel || !lTratamiento.trim() || lon <= 0 || bot < 0) return;
@@ -374,6 +381,7 @@ const Index = () => {
     const { error } = await supabase.from("tallos").insert({
       cama, parcela: lParcelaSel, tratamiento: lTratamiento.trim(),
       numero, longitud_cm: lon, botones: bot,
+      ensayo_codigo: ensayoCodigo,
     });
     if (error) { toast.error(error.message); return; }
     setLLongitud(""); setLBotones("");
@@ -381,8 +389,9 @@ const Index = () => {
   };
 
   const limpiarTallos = async () => {
+    if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de longitud y puntos?")) return;
-    const { error } = await supabase.from("tallos").delete().not("id", "is", null);
+    const { error } = await supabase.from("tallos").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
   };
 
@@ -411,6 +420,7 @@ const Index = () => {
   };
 
   const añadirRamo = async () => {
+    if (!ensayoCodigo) return;
     const tpr = parseInt(rTallosPorRamo) || 0;
     const peso = parseFloat(rPeso) || 0;
     if (!cama || !rParcelaSel || !rTratamiento.trim() || tpr <= 0 || peso <= 0) return;
@@ -418,6 +428,7 @@ const Index = () => {
     const { error } = await supabase.from("ramos_peso").insert({
       cama, parcela: rParcelaSel, tratamiento: rTratamiento.trim(),
       numero, tallos_por_ramo: tpr, peso_g: peso,
+      ensayo_codigo: ensayoCodigo,
     });
     if (error) { toast.error(error.message); return; }
     setRTallosPorRamo(""); setRPeso("");
@@ -425,14 +436,16 @@ const Index = () => {
   };
 
   const limpiarRamos = async () => {
+    if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de peso de ramo?")) return;
-    const { error } = await supabase.from("ramos_peso").delete().not("id", "is", null);
+    const { error } = await supabase.from("ramos_peso").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
   };
 
   const limpiarTodo = async () => {
+    if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODAS las siembras de la base de datos?")) return;
-    const { error } = await supabase.from("siembras").delete().not("id", "is", null);
+    const { error } = await supabase.from("siembras").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message); else toast.success("Base de datos limpiada");
   };
 
