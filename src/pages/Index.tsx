@@ -1264,6 +1264,22 @@ const Index = () => {
         <span>Aplicativo de ensayos v 1.0</span>
         <span>Innovación Flores el Trigal</span>
       </footer>
+
+      {editTipo && (
+        <EditUltimosDialog
+          open={!!editTipo}
+          onClose={() => setEditTipo(null)}
+          tipo={editTipo}
+          registros={
+            editTipo === "prod" ? registros :
+            editTipo === "perd" ? perdidas :
+            editTipo === "tallos" ? tallos :
+            ramosPeso
+          }
+          siembras={data}
+          onSaved={() => loadRegistros()}
+        />
+      )}
     </div>
   );
 };
