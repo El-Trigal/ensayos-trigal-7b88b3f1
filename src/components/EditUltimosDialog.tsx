@@ -35,6 +35,7 @@ type Props = {
 export default function EditUltimosDialog({ open, onClose, tipo, registros, siembras, onSaved }: Props) {
   const [rows, setRows] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) setRows(registros.slice(0, 3).map((r) => ({ ...r })));
@@ -55,6 +56,22 @@ export default function EditUltimosDialog({ open, onClose, tipo, registros, siem
     const patch: any = { cama: cm, variedad, bloque };
     if (tipo === "perd") patch.plantas_iniciales = plantasDe(cm);
     upd(i, patch);
+  };
+
+  const eliminar = async (id: string) => {
+    if (!window.confirm("¿Eliminar este registro? Esta acción no se puede deshacer.")) return;
+    setDeletingId(id);
+    try {
+      const { error } = await supabase.from(TABLA[tipo]).delete().eq("id", id);
+      if (error) throw error;
+      setRows((prev) => prev.filter((r) => r.id !== id));
+      toast.success("Registro eliminado");
+      onSaved();
+    } catch (e: any) {
+      toast.error(e.message ?? "Error al eliminar");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const guardar = async () => {
@@ -111,7 +128,16 @@ export default function EditUltimosDialog({ open, onClose, tipo, registros, siem
           <div className="space-y-4">
             {rows.map((r, i) => (
               <div key={r.id} className="border-2 border-lapis p-3">
-                <div className="font-mono text-[10px] uppercase text-muted-foreground mb-2">Registro #{i + 1} · {new Date(r.fecha ?? r.created_at).toLocaleString("es")}</div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-mono text-[10px] uppercase text-muted-foreground">Registro #{i + 1} · {new Date(r.fecha ?? r.created_at).toLocaleString("es")}</div>
+                  <button
+                    onClick={() => eliminar(r.id)}
+                    disabled={deletingId === r.id}
+                    className="font-mono text-[10px] uppercase px-2 py-1 border border-red-500 text-red-500 hover:bg-red-500/10 disabled:opacity-50"
+                  >
+                    {deletingId === r.id ? "Eliminando…" : "Eliminar"}
+                  </button>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <label className="font-mono text-[10px] uppercase">
                     Cama
