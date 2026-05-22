@@ -265,7 +265,13 @@ export const exportTallos = (
     "Variedad", "Bloque", "Cama", "Lado", "Parcela", "Tratamiento",
     "No del Tallo", "Longitud del tallo (cm)", "Número de puntos",
   ];
-  const data = rows.map((r) => {
+  const sorted = [...rows].sort((a, b) =>
+    (a.cama ?? "").localeCompare(b.cama ?? "") ||
+    (a.parcela ?? "").localeCompare(b.parcela ?? "") ||
+    (a.tratamiento ?? "").localeCompare(b.tratamiento ?? "") ||
+    (a.numero - b.numero)
+  );
+  const data = sorted.map((r) => {
     const info = lookupSiembra(siembrasMap, r.cama);
     const { numero, lado } = parseCama(r.cama);
     const fecha = fmtDate(r.fecha);
@@ -305,7 +311,13 @@ export const exportRamos = (
     "Variedad", "Bloque", "Cama", "Lado", "Parcela", "Tratamiento",
     "No del ramo", "Peso del ramo", "Numero de tallos por ramo", "Peso tallo",
   ];
-  const data = rows.map((r) => {
+  const sorted = [...rows].sort((a, b) =>
+    (a.cama ?? "").localeCompare(b.cama ?? "") ||
+    (a.parcela ?? "").localeCompare(b.parcela ?? "") ||
+    (a.tratamiento ?? "").localeCompare(b.tratamiento ?? "") ||
+    (a.numero - b.numero)
+  );
+  const data = sorted.map((r) => {
     const info = lookupSiembra(siembrasMap, r.cama);
     const { numero, lado } = parseCama(r.cama);
     const fecha = fmtDate(r.fecha);

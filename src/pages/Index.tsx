@@ -9,6 +9,7 @@ import {
   exportTallos,
   exportRamos,
 } from "@/lib/exportRegistros";
+import EditUltimosDialog from "@/components/EditUltimosDialog";
 
 type Siembra = {
   id: string;
@@ -125,6 +126,9 @@ const Index = () => {
   const [rPeso, setRPeso] = useState<string>("");
   type Ramo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; tallos_por_ramo: number; peso_g: number; fecha: string; bloque: number | null };
   const [ramosPeso, setRamosPeso] = useState<Ramo[]>([]);
+
+  // Edición últimos 3
+  const [editTipo, setEditTipo] = useState<null | "prod" | "perd" | "tallos" | "ramos">(null);
 
   const siembrasMap = useMemo(() => buildSiembrasMap(data as any), [data]);
 
@@ -896,12 +900,13 @@ const Index = () => {
             </div>
             {acumulados.length > 0 && (
               <div className="border-t-2 border-lapis">
-                <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
-                  <span className="font-mono text-xs uppercase font-bold text-lapis">ACUMULADO POR CAMA, VARIEDAD, PARCELA Y TRATAMIENTO</span>
-                  <button onClick={limpiarProductividad} className="font-mono text-xs uppercase text-accent-orange hover:underline">
-                    LIMPIAR
-                  </button>
-                </div>
+                 <div className="p-4 border-b-2 border-lapis flex justify-between items-center gap-2 flex-wrap">
+                   <span className="font-mono text-xs uppercase font-bold text-lapis">ACUMULADO POR CAMA, VARIEDAD, PARCELA Y TRATAMIENTO</span>
+                   <div className="flex gap-3">
+                     <button onClick={() => setEditTipo("prod")} className="font-mono text-xs uppercase text-lapis hover:underline">EDITAR ÚLTIMOS 3</button>
+                     <button onClick={limpiarProductividad} className="font-mono text-xs uppercase text-accent-orange hover:underline">LIMPIAR</button>
+                   </div>
+                 </div>
                 <div className="overflow-x-auto">
                 <table className="w-full font-mono text-xs">
                   <thead className="bg-lapis text-background">
@@ -1002,12 +1007,13 @@ const Index = () => {
             </div>
             {acumuladosPerdidas.length > 0 && (
               <div className="border-t-2 border-lapis">
-                <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
-                  <span className="font-mono text-xs uppercase font-bold text-lapis">ACUMULADO DE PÉRDIDAS POR CAMA, VARIEDAD, PARCELA, TRATAMIENTO Y CAUSA</span>
-                  <button onClick={limpiarPerdidas} className="font-mono text-xs uppercase text-accent-orange hover:underline">
-                    LIMPIAR
-                  </button>
-                </div>
+                 <div className="p-4 border-b-2 border-lapis flex justify-between items-center gap-2 flex-wrap">
+                   <span className="font-mono text-xs uppercase font-bold text-lapis">ACUMULADO DE PÉRDIDAS POR CAMA, VARIEDAD, PARCELA, TRATAMIENTO Y CAUSA</span>
+                   <div className="flex gap-3">
+                     <button onClick={() => setEditTipo("perd")} className="font-mono text-xs uppercase text-lapis hover:underline">EDITAR ÚLTIMOS 3</button>
+                     <button onClick={limpiarPerdidas} className="font-mono text-xs uppercase text-accent-orange hover:underline">LIMPIAR</button>
+                   </div>
+                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full font-mono text-xs">
                     <thead className="bg-lapis text-background">
@@ -1100,12 +1106,13 @@ const Index = () => {
             </div>
             {acumuladosTallos.length > 0 && (
               <div className="border-t-2 border-lapis">
-                <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
-                  <span className="font-mono text-xs uppercase font-bold text-lapis">ACUMULADO POR CAMA, PARCELA Y TRATAMIENTO</span>
-                  <button onClick={limpiarTallos} className="font-mono text-xs uppercase text-accent-orange hover:underline">
-                    LIMPIAR
-                  </button>
-                </div>
+                 <div className="p-4 border-b-2 border-lapis flex justify-between items-center gap-2 flex-wrap">
+                   <span className="font-mono text-xs uppercase font-bold text-lapis">ACUMULADO POR CAMA, PARCELA Y TRATAMIENTO</span>
+                   <div className="flex gap-3">
+                     <button onClick={() => setEditTipo("tallos")} className="font-mono text-xs uppercase text-lapis hover:underline">EDITAR ÚLTIMOS 3</button>
+                     <button onClick={limpiarTallos} className="font-mono text-xs uppercase text-accent-orange hover:underline">LIMPIAR</button>
+                   </div>
+                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full font-mono text-xs">
                     <thead className="bg-lapis text-background">
@@ -1198,12 +1205,13 @@ const Index = () => {
             </div>
             {acumuladosRamos.length > 0 && (
               <div className="border-t-2 border-lapis">
-                <div className="p-4 border-b-2 border-lapis flex justify-between items-center">
-                  <span className="font-mono text-xs uppercase font-bold text-lapis">ACUMULADO POR CAMA, PARCELA Y TRATAMIENTO</span>
-                  <button onClick={limpiarRamos} className="font-mono text-xs uppercase text-accent-orange hover:underline">
-                    LIMPIAR
-                  </button>
-                </div>
+                 <div className="p-4 border-b-2 border-lapis flex justify-between items-center gap-2 flex-wrap">
+                   <span className="font-mono text-xs uppercase font-bold text-lapis">ACUMULADO POR CAMA, PARCELA Y TRATAMIENTO</span>
+                   <div className="flex gap-3">
+                     <button onClick={() => setEditTipo("ramos")} className="font-mono text-xs uppercase text-lapis hover:underline">EDITAR ÚLTIMOS 3</button>
+                     <button onClick={limpiarRamos} className="font-mono text-xs uppercase text-accent-orange hover:underline">LIMPIAR</button>
+                   </div>
+                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full font-mono text-xs">
                     <thead className="bg-lapis text-background">
@@ -1256,6 +1264,22 @@ const Index = () => {
         <span>Aplicativo de ensayos v 1.0</span>
         <span>Innovación Flores el Trigal</span>
       </footer>
+
+      {editTipo && (
+        <EditUltimosDialog
+          open={!!editTipo}
+          onClose={() => setEditTipo(null)}
+          tipo={editTipo}
+          registros={
+            editTipo === "prod" ? registros :
+            editTipo === "perd" ? perdidas :
+            editTipo === "tallos" ? tallos :
+            ramosPeso
+          }
+          siembras={data}
+          onSaved={() => loadRegistros()}
+        />
+      )}
     </div>
   );
 };
