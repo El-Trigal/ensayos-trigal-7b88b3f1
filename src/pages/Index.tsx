@@ -9,6 +9,7 @@ import {
   exportTallos,
   exportRamos,
 } from "@/lib/exportRegistros";
+import EditUltimosDialog from "@/components/EditUltimosDialog";
 
 type Siembra = {
   id: string;
@@ -125,6 +126,9 @@ const Index = () => {
   const [rPeso, setRPeso] = useState<string>("");
   type Ramo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; tallos_por_ramo: number; peso_g: number; fecha: string; bloque: number | null };
   const [ramosPeso, setRamosPeso] = useState<Ramo[]>([]);
+
+  // Edición últimos 3
+  const [editTipo, setEditTipo] = useState<null | "prod" | "perd" | "tallos" | "ramos">(null);
 
   const siembrasMap = useMemo(() => buildSiembrasMap(data as any), [data]);
 
