@@ -850,67 +850,72 @@ const Index = () => {
         </section>
 
         {/* Productividad */}
-        {cama && nParcelas > 0 && (
+        {nParcelas > 0 && data.length > 0 && (
           <section className="border-2 border-lapis bg-white">
             <div className="border-b-2 border-lapis p-4">
-              <span className="font-mono text-xs uppercase font-bold text-lapis">PRODUCTIVIDAD</span>
+              <span className="font-mono text-xs uppercase font-bold text-lapis">PRODUCTIVIDAD · 3 GRUPOS</span>
             </div>
-            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">VARIEDAD</label>
-                <select value={variedadSel} onChange={(e) => setVariedadSel(e.target.value)}
-                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
-                  <option value="">— Selecciona —</option>
-                  {variedades.map((v) => <option key={v.nom} value={v.nom}>{v.nom}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">PARCELA</label>
-                <select value={parcelaSel} onChange={(e) => setParcelaSel(e.target.value)}
-                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
-                  <option value="">— Selecciona —</option>
-                  {Array.from({ length: nParcelas }, (_, i) => i + 1).map((n) => (
-                    <option key={n} value={n}>Parcela {n}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">TRATAMIENTO</label>
-                <input type="text" value={tratamiento} onChange={(e) => setTratamiento(e.target.value)}
-                  placeholder="Nombre del tratamiento"
-                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
-              </div>
-              {variedadSel && parcelaSel && tratamiento.trim() && (
-                <>
-                  <div>
-                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">N° de ramos</label>
-                    <input type="number" min="0" value={ramos} onChange={(e) => setRamos(e.target.value)}
-                      placeholder="Cantidad de ramos"
-                      className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
-                  </div>
-                  <div>
-                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">N° de tallos por ramo</label>
-                    <input type="number" min="0" value={tallosPorRamo} onChange={(e) => setTallosPorRamo(e.target.value)}
-                      placeholder="Tallos / ramo"
-                      className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
-                  </div>
-                  {nRamos > 0 && nTallos > 0 && (
-                    <div className="md:col-span-2 border-2 border-lapis bg-accent-orange/10 p-6 flex items-center justify-between gap-4 flex-wrap">
-                      <div>
-                        <span className="font-mono text-xs uppercase text-muted-foreground">Tallos en este registro</span>
-                        <div className="mt-2 text-4xl font-extrabold tracking-tighter text-accent-orange">{totalTallos.toLocaleString("es")}</div>
-                        <span className="font-mono text-[10px] text-muted-foreground">{nRamos} ramos × {nTallos} tallos · Cama {cama} · {variedadSel} · Parcela {parcelaSel} · {tratamiento}</span>
-                      </div>
-                      <button
-                        onClick={añadirRegistro}
-                        className="font-mono text-xs uppercase tracking-widest bg-lapis text-background px-6 py-3 hover:bg-accent-orange transition-colors"
-                      >
-                        Añadir
-                      </button>
+            <div className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              {prodGroups.map((g, i) => {
+                const r = parseInt(g.ramos) || 0;
+                const t = parseInt(g.tallos) || 0;
+                const valid = g.cama && g.variedad && g.parcela && g.tratamiento.trim() && r > 0 && t > 0;
+                return (
+                  <div key={i} className="border-2 border-lapis p-4 space-y-3 bg-lapis/5">
+                    <div className="font-mono text-[10px] uppercase font-bold text-lapis">Grupo {i + 1}</div>
+                    <div>
+                      <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Cama</label>
+                      <select value={g.cama} onChange={(e) => setProdGroups((p) => p.map((x, k) => k === i ? { ...x, cama: e.target.value, variedad: "" } : x))}
+                        className="w-full border-2 border-lapis p-2 bg-background font-mono text-xs focus:outline-none focus:border-accent-orange">
+                        <option value="">—</option>
+                        {camasDisponibles.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
                     </div>
-                  )}
-                </>
-              )}
+                    <div>
+                      <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Variedad</label>
+                      <select value={g.variedad} onChange={(e) => setProdGroups((p) => p.map((x, k) => k === i ? { ...x, variedad: e.target.value } : x))}
+                        disabled={!g.cama}
+                        className="w-full border-2 border-lapis p-2 bg-background font-mono text-xs focus:outline-none focus:border-accent-orange disabled:opacity-50">
+                        <option value="">—</option>
+                        {variedadesDeCama(g.cama).map((v) => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Parcela</label>
+                      <select value={g.parcela} onChange={(e) => setProdGroups((p) => p.map((x, k) => k === i ? { ...x, parcela: e.target.value } : x))}
+                        className="w-full border-2 border-lapis p-2 bg-background font-mono text-xs focus:outline-none focus:border-accent-orange">
+                        <option value="">—</option>
+                        {Array.from({ length: nParcelas }, (_, n) => n + 1).map((n) => <option key={n} value={n}>Parcela {n}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Tratamiento</label>
+                      <input type="text" value={g.tratamiento} onChange={(e) => setProdGroups((p) => p.map((x, k) => k === i ? { ...x, tratamiento: e.target.value } : x))}
+                        placeholder="Tratamiento"
+                        className="w-full border-2 border-lapis p-2 bg-background font-mono text-xs focus:outline-none focus:border-accent-orange" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Ramos</label>
+                        <input type="number" min="0" value={g.ramos} onChange={(e) => setProdGroups((p) => p.map((x, k) => k === i ? { ...x, ramos: e.target.value } : x))}
+                          className="w-full border-2 border-lapis p-2 bg-background font-mono text-xs focus:outline-none focus:border-accent-orange" />
+                      </div>
+                      <div>
+                        <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Tallos/ramo</label>
+                        <input type="number" min="0" value={g.tallos} onChange={(e) => setProdGroups((p) => p.map((x, k) => k === i ? { ...x, tallos: e.target.value } : x))}
+                          className="w-full border-2 border-lapis p-2 bg-background font-mono text-xs focus:outline-none focus:border-accent-orange" />
+                      </div>
+                    </div>
+                    {valid && (
+                      <div className="font-mono text-[10px] text-accent-orange">Total: {(r * t).toLocaleString("es")} tallos</div>
+                    )}
+                    <button onClick={() => añadirProdGrupo(i)} disabled={!valid}
+                      className="w-full font-mono text-xs uppercase tracking-widest bg-lapis text-background px-4 py-2 hover:bg-accent-orange transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                      Añadir
+                    </button>
+                  </div>
+                );
+              })}
             </div>
             {acumulados.length > 0 && (
               <div className="border-t-2 border-lapis">
