@@ -301,18 +301,21 @@ const Index = () => {
     );
   }, [registros]);
 
-  const añadirRegistro = async () => {
+  const añadirProdGrupo = async (i: number) => {
     if (!ensayoCodigo) return;
-    if (!cama || !variedadSel || !parcelaSel || !tratamiento.trim() || nRamos <= 0 || nTallos <= 0) return;
-    const bloqueRow = data.find((d) => d.cm === cama)?.bloque ?? null;
+    const g = prodGroups[i];
+    const r = parseInt(g.ramos) || 0;
+    const t = parseInt(g.tallos) || 0;
+    if (!g.cama || !g.variedad || !g.parcela || !g.tratamiento.trim() || r <= 0 || t <= 0) return;
+    const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
     const { error } = await supabase.from("productividad").insert({
-      cama, variedad: variedadSel, parcela: parcelaSel,
-      tratamiento: tratamiento.trim(), ramos: nRamos,
-      tallos_por_ramo: nTallos, total: nRamos * nTallos,
+      cama: g.cama, variedad: g.variedad, parcela: g.parcela,
+      tratamiento: g.tratamiento.trim(), ramos: r,
+      tallos_por_ramo: t, total: r * t,
       ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
     });
     if (error) { toast.error(error.message); return; }
-    setRamos(""); setTallosPorRamo("");
+    setProdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, ramos: "", tallos: "" } : x));
     toast.success("Registro añadido");
   };
 
@@ -330,19 +333,20 @@ const Index = () => {
     );
   }, [perdidas]);
 
-  const añadirPerdida = async () => {
+  const añadirPerdGrupo = async (i: number) => {
     if (!ensayoCodigo) return;
-    const t = parseInt(pTallos) || 0;
-    if (!cama || !pVariedadSel || !pParcelaSel || !pTratamiento.trim() || !pCausa || t <= 0) return;
-    const bloqueRow = data.find((d) => d.cm === cama)?.bloque ?? null;
+    const g = perdGroups[i];
+    const t = parseInt(g.tallos) || 0;
+    if (!g.cama || !g.variedad || !g.parcela || !g.tratamiento.trim() || !g.causa || t <= 0) return;
+    const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
     const plantasIni = nPlantasParc > 0 ? nPlantasParc : null;
     const { error } = await supabase.from("perdidas").insert({
-      cama, variedad: pVariedadSel, parcela: pParcelaSel,
-      tratamiento: pTratamiento.trim(), causa: pCausa, tallos: t,
+      cama: g.cama, variedad: g.variedad, parcela: g.parcela,
+      tratamiento: g.tratamiento.trim(), causa: g.causa, tallos: t,
       ensayo_codigo: ensayoCodigo, bloque: bloqueRow, plantas_iniciales: plantasIni,
     });
     if (error) { toast.error(error.message); return; }
-    setPTallos("");
+    setPerdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, tallos: "" } : x));
     toast.success("Pérdida registrada");
   };
 
@@ -374,29 +378,30 @@ const Index = () => {
     );
   }, [tallos]);
 
-  const siguienteNumeroTallo = (parcela: string, tratamiento: string) => {
-    if (!cama || !parcela || !tratamiento.trim()) return 1;
+  const siguienteNumeroTallo = (cm: string, parcela: string, tratamiento: string) => {
+    if (!cm || !parcela || !tratamiento.trim()) return 1;
     const t = tratamiento.trim();
     const max = tallos
-      .filter((r) => r.cama === cama && r.parcela === parcela && r.tratamiento === t)
+      .filter((r) => r.cama === cm && r.parcela === parcela && r.tratamiento === t)
       .reduce((acc, r) => Math.max(acc, r.numero), 0);
     return max + 1;
   };
 
-  const añadirTallo = async () => {
+  const añadirTalloGrupo = async (i: number) => {
     if (!ensayoCodigo) return;
-    const lon = parseFloat(lLongitud) || 0;
-    const bot = parseInt(lBotones) || 0;
-    if (!cama || !lParcelaSel || !lTratamiento.trim() || lon <= 0 || bot < 0) return;
-    const numero = siguienteNumeroTallo(lParcelaSel, lTratamiento);
-    const bloqueRow = data.find((d) => d.cm === cama)?.bloque ?? null;
+    const g = tallosGroups[i];
+    const lon = parseFloat(g.longitud) || 0;
+    const bot = parseInt(g.botones) || 0;
+    if (!g.cama || !g.parcela || !g.tratamiento.trim() || lon <= 0 || bot < 0) return;
+    const numero = siguienteNumeroTallo(g.cama, g.parcela, g.tratamiento);
+    const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
     const { error } = await supabase.from("tallos").insert({
-      cama, parcela: lParcelaSel, tratamiento: lTratamiento.trim(),
+      cama: g.cama, parcela: g.parcela, tratamiento: g.tratamiento.trim(),
       numero, longitud_cm: lon, botones: bot,
       ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
     });
     if (error) { toast.error(error.message); return; }
-    setLLongitud(""); setLBotones("");
+    setTallosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, longitud: "", botones: "" } : x));
     toast.success(`Tallo ${numero} registrado`);
   };
 
@@ -422,29 +427,30 @@ const Index = () => {
     );
   }, [ramosPeso]);
 
-  const siguienteNumeroRamo = (parcela: string, tratamiento: string) => {
-    if (!cama || !parcela || !tratamiento.trim()) return 1;
+  const siguienteNumeroRamo = (cm: string, parcela: string, tratamiento: string) => {
+    if (!cm || !parcela || !tratamiento.trim()) return 1;
     const t = tratamiento.trim();
     const max = ramosPeso
-      .filter((r) => r.cama === cama && r.parcela === parcela && r.tratamiento === t)
+      .filter((r) => r.cama === cm && r.parcela === parcela && r.tratamiento === t)
       .reduce((acc, r) => Math.max(acc, r.numero), 0);
     return max + 1;
   };
 
-  const añadirRamo = async () => {
+  const añadirRamoGrupo = async (i: number) => {
     if (!ensayoCodigo) return;
-    const tpr = parseInt(rTallosPorRamo) || 0;
-    const peso = parseFloat(rPeso) || 0;
-    if (!cama || !rParcelaSel || !rTratamiento.trim() || tpr <= 0 || peso <= 0) return;
-    const numero = siguienteNumeroRamo(rParcelaSel, rTratamiento);
-    const bloqueRow = data.find((d) => d.cm === cama)?.bloque ?? null;
+    const g = ramosGroups[i];
+    const tpr = parseInt(g.tallosPorRamo) || 0;
+    const peso = parseFloat(g.peso) || 0;
+    if (!g.cama || !g.parcela || !g.tratamiento.trim() || tpr <= 0 || peso <= 0) return;
+    const numero = siguienteNumeroRamo(g.cama, g.parcela, g.tratamiento);
+    const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
     const { error } = await supabase.from("ramos_peso").insert({
-      cama, parcela: rParcelaSel, tratamiento: rTratamiento.trim(),
+      cama: g.cama, parcela: g.parcela, tratamiento: g.tratamiento.trim(),
       numero, tallos_por_ramo: tpr, peso_g: peso,
       ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
     });
     if (error) { toast.error(error.message); return; }
-    setRTallosPorRamo(""); setRPeso("");
+    setRamosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, tallosPorRamo: "", peso: "" } : x));
     toast.success(`Ramo ${numero} registrado`);
   };
 
