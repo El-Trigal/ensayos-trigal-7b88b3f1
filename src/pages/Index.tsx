@@ -103,29 +103,30 @@ const Index = () => {
 
   // Pérdidas
   const CAUSAS = ["Botón corona", "Botrytis", "Compuesto", "Daño mecanico", "Delgados", "Espiga corta", "Flor Abierta", "Malformación", "Mezcla", "Mutación", "Pocos puntos", "Secadera", "Tallos cortos", "Torcidos", "Vegetativo"] as const;
-  const [pVariedadSel, setPVariedadSel] = useState<string>("");
-  const [pParcelaSel, setPParcelaSel] = useState<string>("");
-  const [pTratamiento, setPTratamiento] = useState<string>("");
-  const [pCausa, setPCausa] = useState<string>("");
-  const [pTallos, setPTallos] = useState<string>("");
   type Perdida = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; fecha: string; bloque: number | null; plantas_iniciales: number | null };
   const [perdidas, setPerdidas] = useState<Perdida[]>([]);
 
   // Longitud y puntos
-  const [lParcelaSel, setLParcelaSel] = useState<string>("");
-  const [lTratamiento, setLTratamiento] = useState<string>("");
-  const [lLongitud, setLLongitud] = useState<string>("");
-  const [lBotones, setLBotones] = useState<string>("");
   type Tallo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; longitud_cm: number; botones: number; fecha: string; bloque: number | null };
   const [tallos, setTallos] = useState<Tallo[]>([]);
 
   // Peso de ramo
-  const [rParcelaSel, setRParcelaSel] = useState<string>("");
-  const [rTratamiento, setRTratamiento] = useState<string>("");
-  const [rTallosPorRamo, setRTallosPorRamo] = useState<string>("");
-  const [rPeso, setRPeso] = useState<string>("");
   type Ramo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; tallos_por_ramo: number; peso_g: number; fecha: string; bloque: number | null };
   const [ramosPeso, setRamosPeso] = useState<Ramo[]>([]);
+
+  // ===== Grupos multi-cama (3 por sección) =====
+  type ProdGroup = { cama: string; variedad: string; parcela: string; tratamiento: string; ramos: string; tallos: string };
+  type PerdGroup = { cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: string };
+  type TallosGroup = { cama: string; parcela: string; tratamiento: string; longitud: string; botones: string };
+  type RamosGroup = { cama: string; parcela: string; tratamiento: string; tallosPorRamo: string; peso: string };
+  const emptyProd: ProdGroup = { cama: "", variedad: "", parcela: "", tratamiento: "", ramos: "", tallos: "" };
+  const emptyPerd: PerdGroup = { cama: "", variedad: "", parcela: "", tratamiento: "", causa: "", tallos: "" };
+  const emptyTallos: TallosGroup = { cama: "", parcela: "", tratamiento: "", longitud: "", botones: "" };
+  const emptyRamos: RamosGroup = { cama: "", parcela: "", tratamiento: "", tallosPorRamo: "", peso: "" };
+  const [prodGroups, setProdGroups] = useState<ProdGroup[]>([{...emptyProd}, {...emptyProd}, {...emptyProd}]);
+  const [perdGroups, setPerdGroups] = useState<PerdGroup[]>([{...emptyPerd}, {...emptyPerd}, {...emptyPerd}]);
+  const [tallosGroups, setTallosGroups] = useState<TallosGroup[]>([{...emptyTallos}, {...emptyTallos}, {...emptyTallos}]);
+  const [ramosGroups, setRamosGroups] = useState<RamosGroup[]>([{...emptyRamos}, {...emptyRamos}, {...emptyRamos}]);
 
   // Edición últimos 3
   const [editTipo, setEditTipo] = useState<null | "prod" | "perd" | "tallos" | "ramos">(null);
