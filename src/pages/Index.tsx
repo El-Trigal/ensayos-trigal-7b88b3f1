@@ -468,6 +468,13 @@ const Index = () => {
     if (error) toast.error(error.message); else toast.success("Base de datos limpiada");
   };
 
+  const variedadesDeCama = (cm: string): string[] => {
+    if (!cm) return [];
+    const set = new Set<string>();
+    data.forEach((d) => { if (d.cm === cm) set.add(d.nom_flor); });
+    return Array.from(set).sort();
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground p-6 md:p-12">
       <nav className="max-w-7xl mx-auto flex flex-wrap gap-4 justify-between items-end border-b-2 border-lapis pb-6 mb-12">
