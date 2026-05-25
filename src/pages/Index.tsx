@@ -1163,63 +1163,64 @@ const Index = () => {
         )}
 
         {/* Peso de ramo */}
-        {cama && nParcelas > 0 && (
+        {nParcelas > 0 && data.length > 0 && (
           <section className="border-2 border-lapis bg-white">
             <div className="border-b-2 border-lapis p-4">
-              <span className="font-mono text-xs uppercase font-bold text-lapis">PESO DE RAMO</span>
+              <span className="font-mono text-xs uppercase font-bold text-lapis">PESO DE RAMO · 3 GRUPOS</span>
             </div>
-            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">PARCELA</label>
-                <select value={rParcelaSel} onChange={(e) => setRParcelaSel(e.target.value)}
-                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange">
-                  <option value="">— Selecciona —</option>
-                  {Array.from({ length: nParcelas }, (_, i) => i + 1).map((n) => (
-                    <option key={n} value={n}>Parcela {n}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">TRATAMIENTO</label>
-                <input type="text" value={rTratamiento} onChange={(e) => setRTratamiento(e.target.value)}
-                  placeholder="Nombre del tratamiento"
-                  className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
-              </div>
-              {rParcelaSel && rTratamiento.trim() && (
-                <>
-                  <div>
-                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">
-                      Tallos por ramo — Ramo {siguienteNumeroRamo(rParcelaSel, rTratamiento)}
-                    </label>
-                    <input type="number" min="0" value={rTallosPorRamo} onChange={(e) => setRTallosPorRamo(e.target.value)}
-                      placeholder="Tallos / ramo"
-                      className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
-                  </div>
-                  <div>
-                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">Peso del ramo (g)</label>
-                    <input type="number" min="0" step="0.1" value={rPeso} onChange={(e) => setRPeso(e.target.value)}
-                      placeholder="g"
-                      className="w-full border-2 border-lapis p-3 bg-background font-mono text-sm focus:outline-none focus:border-accent-orange" />
-                  </div>
-                  {(parseInt(rTallosPorRamo) || 0) > 0 && (parseFloat(rPeso) || 0) > 0 && (
-                    <div className="md:col-span-2 border-2 border-lapis bg-accent-orange/10 p-6 flex items-center justify-between gap-4 flex-wrap">
-                      <div>
-                        <span className="font-mono text-xs uppercase text-muted-foreground">Próximo registro · Peso/tallo</span>
-                        <div className="mt-2 text-4xl font-extrabold tracking-tighter text-accent-orange">
-                          Ramo {siguienteNumeroRamo(rParcelaSel, rTratamiento)} · {((parseFloat(rPeso) || 0) / (parseInt(rTallosPorRamo) || 1)).toFixed(2)} g
-                        </div>
-                        <span className="font-mono text-[10px] text-muted-foreground">Cama {cama} · Parcela {rParcelaSel} · {rTratamiento} · {rTallosPorRamo} tallos · {rPeso} g</span>
-                      </div>
-                      <button
-                        onClick={añadirRamo}
-                        className="font-mono text-xs uppercase tracking-widest bg-lapis text-background px-6 py-3 hover:bg-accent-orange transition-colors"
-                      >
-                        Añadir
-                      </button>
+            <div className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              {ramosGroups.map((g, i) => {
+                const tpr = parseInt(g.tallosPorRamo) || 0;
+                const peso = parseFloat(g.peso) || 0;
+                const valid = !!(g.cama && g.parcela && g.tratamiento.trim() && tpr > 0 && peso > 0);
+                const num = siguienteNumeroRamo(g.cama, g.parcela, g.tratamiento);
+                return (
+                  <div key={i} className="border-2 border-lapis p-4 space-y-3 bg-lapis/5">
+                    <div className="font-mono text-[10px] uppercase font-bold text-lapis">Grupo {i + 1} · Ramo {num}</div>
+                    <div>
+                      <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Cama</label>
+                      <select value={g.cama} onChange={(e) => setRamosGroups((p) => p.map((x, k) => k === i ? { ...x, cama: e.target.value } : x))}
+                        className="w-full border-2 border-lapis p-2 bg-background font-mono text-xs focus:outline-none focus:border-accent-orange">
+                        <option value="">—</option>
+                        {camasDisponibles.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
                     </div>
-                  )}
-                </>
-              )}
+                    <div>
+                      <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Parcela</label>
+                      <select value={g.parcela} onChange={(e) => setRamosGroups((p) => p.map((x, k) => k === i ? { ...x, parcela: e.target.value } : x))}
+                        className="w-full border-2 border-lapis p-2 bg-background font-mono text-xs focus:outline-none focus:border-accent-orange">
+                        <option value="">—</option>
+                        {Array.from({ length: nParcelas }, (_, n) => n + 1).map((n) => <option key={n} value={n}>Parcela {n}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Tratamiento</label>
+                      <input type="text" value={g.tratamiento} onChange={(e) => setRamosGroups((p) => p.map((x, k) => k === i ? { ...x, tratamiento: e.target.value } : x))}
+                        placeholder="Tratamiento"
+                        className="w-full border-2 border-lapis p-2 bg-background font-mono text-xs focus:outline-none focus:border-accent-orange" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Tallos/ramo</label>
+                        <input type="number" min="0" value={g.tallosPorRamo} onChange={(e) => setRamosGroups((p) => p.map((x, k) => k === i ? { ...x, tallosPorRamo: e.target.value } : x))}
+                          className="w-full border-2 border-lapis p-2 bg-background font-mono text-xs focus:outline-none focus:border-accent-orange" />
+                      </div>
+                      <div>
+                        <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Peso g</label>
+                        <input type="number" min="0" step="0.1" value={g.peso} onChange={(e) => setRamosGroups((p) => p.map((x, k) => k === i ? { ...x, peso: e.target.value } : x))}
+                          className="w-full border-2 border-lapis p-2 bg-background font-mono text-xs focus:outline-none focus:border-accent-orange" />
+                      </div>
+                    </div>
+                    {valid && (
+                      <div className="font-mono text-[10px] text-accent-orange">Peso/tallo: {(peso / tpr).toFixed(2)} g</div>
+                    )}
+                    <button onClick={() => añadirRamoGrupo(i)} disabled={!valid}
+                      className="w-full font-mono text-xs uppercase tracking-widest bg-lapis text-background px-4 py-2 hover:bg-accent-orange transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                      Añadir
+                    </button>
+                  </div>
+                );
+              })}
             </div>
             {acumuladosRamos.length > 0 && (
               <div className="border-t-2 border-lapis">
