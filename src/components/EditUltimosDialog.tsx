@@ -98,7 +98,13 @@ export default function EditUltimosDialog({ open, onClose, tipo, registros, siem
         } else if (tipo === "tallos") {
           payload.longitud_cm = Number(r.longitud_cm) || 0;
           payload.botones = Number(r.botones) || 0;
-          payload.piso = r.piso === "sin" || !r.piso ? null : String(r.piso);
+          if (r.botones_piso2 == null || r.botones_piso2 === "") {
+            payload.piso = null;
+            payload.botones_piso2 = null;
+          } else {
+            payload.piso = "pisos";
+            payload.botones_piso2 = Number(r.botones_piso2) || 0;
+          }
         } else if (tipo === "ramos") {
           payload.tallos_por_ramo = Number(r.tallos_por_ramo) || 0;
           payload.peso_g = Number(r.peso_g) || 0;
