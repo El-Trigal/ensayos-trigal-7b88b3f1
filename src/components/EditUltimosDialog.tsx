@@ -98,7 +98,13 @@ export default function EditUltimosDialog({ open, onClose, tipo, registros, siem
         } else if (tipo === "tallos") {
           payload.longitud_cm = Number(r.longitud_cm) || 0;
           payload.botones = Number(r.botones) || 0;
-          payload.piso = r.piso === "sin" || !r.piso ? null : String(r.piso);
+          if (r.botones_piso2 == null || r.botones_piso2 === "") {
+            payload.piso = null;
+            payload.botones_piso2 = null;
+          } else {
+            payload.piso = "pisos";
+            payload.botones_piso2 = Number(r.botones_piso2) || 0;
+          }
         } else if (tipo === "ramos") {
           payload.tallos_por_ramo = Number(r.tallos_por_ramo) || 0;
           payload.peso_g = Number(r.peso_g) || 0;
@@ -196,17 +202,34 @@ export default function EditUltimosDialog({ open, onClose, tipo, registros, siem
                         <input type="number" step="0.1" className={inputCls} value={r.longitud_cm ?? 0} onChange={(e) => upd(i, { longitud_cm: e.target.value })} />
                       </label>
                       <label className="font-mono text-[10px] uppercase">
-                        Piso
-                        <select className={inputCls} value={r.piso ?? "sin"} onChange={(e) => upd(i, { piso: e.target.value })}>
+                        Tipo de registro
+                        <select className={inputCls}
+                          value={r.botones_piso2 != null ? "pisos" : "sin"}
+                          onChange={(e) => {
+                            if (e.target.value === "pisos") upd(i, { piso: "pisos", botones_piso2: r.botones_piso2 ?? 0 });
+                            else upd(i, { piso: null, botones_piso2: null });
+                          }}>
                           <option value="sin">Sin pisos</option>
-                          <option value="1">1</option>
-                          <option value="2">2</option>
+                          <option value="pisos">Por pisos</option>
                         </select>
                       </label>
-                      <label className="font-mono text-[10px] uppercase">
-                        Botones
-                        <input type="number" className={inputCls} value={r.botones ?? 0} onChange={(e) => upd(i, { botones: e.target.value })} />
-                      </label>
+                      {r.botones_piso2 == null ? (
+                        <label className="font-mono text-[10px] uppercase">
+                          N° puntos
+                          <input type="number" className={inputCls} value={r.botones ?? 0} onChange={(e) => upd(i, { botones: e.target.value })} />
+                        </label>
+                      ) : (
+                        <>
+                          <label className="font-mono text-[10px] uppercase">
+                            Puntos piso 1
+                            <input type="number" className={inputCls} value={r.botones ?? 0} onChange={(e) => upd(i, { botones: e.target.value })} />
+                          </label>
+                          <label className="font-mono text-[10px] uppercase">
+                            Puntos piso 2
+                            <input type="number" className={inputCls} value={r.botones_piso2 ?? 0} onChange={(e) => upd(i, { botones_piso2: e.target.value })} />
+                          </label>
+                        </>
+                      )}
                     </>
                   )}
                   {tipo === "ramos" && (

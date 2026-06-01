@@ -243,6 +243,7 @@ export type Database = {
         Row: {
           bloque: number | null
           botones: number
+          botones_piso2: number | null
           cama: string
           created_at: string
           ensayo_codigo: string | null
@@ -257,6 +258,7 @@ export type Database = {
         Insert: {
           bloque?: number | null
           botones?: number
+          botones_piso2?: number | null
           cama: string
           created_at?: string
           ensayo_codigo?: string | null
@@ -271,6 +273,7 @@ export type Database = {
         Update: {
           bloque?: number | null
           botones?: number
+          botones_piso2?: number | null
           cama?: string
           created_at?: string
           ensayo_codigo?: string | null

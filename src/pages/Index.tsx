@@ -100,7 +100,9 @@ const Index = () => {
 
   const [data, setData] = useState<Siembra[]>([]);
   const [loading, setLoading] = useState(false);
-  const [vista, setVista] = useState<"inventario" | "registros">("inventario");
+  const [vista, setVista] = useState<"inventario" | "toma" | "registros">("inventario");
+  const [openSec, setOpenSec] = useState<Record<string, boolean>>({ prod: true, perd: false, tallos: false, ramos: false });
+  const toggleSec = (k: string) => setOpenSec((p) => ({ ...p, [k]: !p[k] }));
   const [bloque, setBloque] = useState<string>("");
   const [cama, setCama] = useState<string>("");
   const [parcelas, setParcelas] = useState<string>("");
@@ -113,7 +115,7 @@ const Index = () => {
   type Perdida = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; fecha: string; bloque: number | null; plantas_iniciales: number | null };
   const [perdidas, setPerdidas] = useState<Perdida[]>([]);
 
-  type Tallo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; longitud_cm: number; botones: number; piso: string | null; fecha: string; bloque: number | null };
+  type Tallo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; longitud_cm: number; botones: number; botones_piso2: number | null; piso: string | null; fecha: string; bloque: number | null };
   const [tallos, setTallos] = useState<Tallo[]>([]);
 
   type Ramo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; tallos_por_ramo: number; peso_g: number; fecha: string; bloque: number | null };
@@ -136,11 +138,11 @@ const Index = () => {
   // ===== Grupos dinámicos (1..4) =====
   type ProdGroup = { cama: string; variedad: string; parcela: string; tratamiento: string; ramos: string; tallos: string };
   type PerdGroup = { cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: string };
-  type TallosGroup = { cama: string; parcela: string; tratamiento: string; longitud: string; botones: string; piso: string };
+  type TallosGroup = { cama: string; parcela: string; tratamiento: string; longitud: string; botones: string; puntos2: string; piso: string };
   type RamosGroup = { cama: string; parcela: string; tratamiento: string; tallosPorRamo: string; peso: string };
   const emptyProd = (): ProdGroup => ({ cama: "", variedad: "", parcela: "", tratamiento: "", ramos: "", tallos: "" });
   const emptyPerd = (): PerdGroup => ({ cama: "", variedad: "", parcela: "", tratamiento: "", causa: "", tallos: "" });
-  const emptyTallos = (): TallosGroup => ({ cama: "", parcela: "", tratamiento: "", longitud: "", botones: "", piso: "sin" });
+  const emptyTallos = (): TallosGroup => ({ cama: "", parcela: "", tratamiento: "", longitud: "", botones: "", puntos2: "", piso: "sin" });
   const emptyRamos = (): RamosGroup => ({ cama: "", parcela: "", tratamiento: "", tallosPorRamo: "", peso: "" });
   const [prodGroups, setProdGroups] = useState<ProdGroup[]>([emptyProd()]);
   const [perdGroups, setPerdGroups] = useState<PerdGroup[]>([emptyPerd()]);
@@ -248,6 +250,7 @@ const Index = () => {
     if (tlls) setTallos(tlls.map((r: any) => ({
       id: r.id, cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento,
       numero: r.numero, longitud_cm: Number(r.longitud_cm), botones: r.botones,
+      botones_piso2: r.botones_piso2 ?? null,
       piso: r.piso ?? null, fecha: r.created_at, bloque: r.bloque ?? null,
     })));
     if (rmps) setRamosPeso(rmps.map((r: any) => ({
@@ -466,7 +469,7 @@ const Index = () => {
     tallos.forEach((r) => {
       const key = `${r.cama}||${r.parcela}||${r.tratamiento}`;
       const cur = m.get(key) ?? { cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento, n: 0, sumLong: 0, sumBot: 0 };
-      cur.n += 1; cur.sumLong += r.longitud_cm; cur.sumBot += r.botones;
+      cur.n += 1; cur.sumLong += r.longitud_cm; cur.sumBot += r.botones + (r.botones_piso2 ?? 0);
       m.set(key, cur);
     });
     return Array.from(m.values()).sort((a, b) =>
@@ -561,19 +564,23 @@ const Index = () => {
     const g = tallosGroups[i];
     const lon = parseFloat(g.longitud) || 0;
     const bot = parseInt(g.botones);
+    const esPisos = g.piso === "pisos";
+    const bot2 = parseInt(g.puntos2);
     if (!g.cama || !g.parcela || !g.tratamiento || lon <= 0 || isNaN(bot) || bot < 0) return;
+    if (esPisos && (isNaN(bot2) || bot2 < 0)) return;
     setSavingK(key, true);
     try {
       const numero = siguienteNumeroTallo(g.cama, g.parcela, g.tratamiento);
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
-      const pisoVal = g.piso === "sin" ? null : g.piso;
       const { error } = await supabase.from("tallos").insert({
         cama: g.cama, parcela: g.parcela, tratamiento: g.tratamiento,
-        numero, longitud_cm: lon, botones: bot, piso: pisoVal,
+        numero, longitud_cm: lon, botones: bot,
+        botones_piso2: esPisos ? bot2 : null,
+        piso: esPisos ? "pisos" : null,
         ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
       });
       if (error) throw error;
-      setTallosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, longitud: "", botones: "" } : x));
+      setTallosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, longitud: "", botones: "", puntos2: "" } : x));
       toast.success(`Tallo ${numero} registrado`);
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
@@ -705,6 +712,10 @@ const Index = () => {
             className={`flex-1 font-mono text-xs uppercase tracking-widest px-6 py-3 transition-colors ${vista === "inventario" ? "bg-lapis text-background" : "text-lapis hover:bg-accent-orange/10"}`}>
             Cargar inventario
           </button>
+          <button onClick={() => setVista("toma")}
+            className={`flex-1 font-mono text-xs uppercase tracking-widest px-6 py-3 transition-colors ${vista === "toma" ? "bg-lapis text-background" : "text-lapis hover:bg-accent-orange/10"}`}>
+            Toma datos
+          </button>
           <button onClick={() => setVista("registros")}
             className={`flex-1 font-mono text-xs uppercase tracking-widest px-6 py-3 transition-colors ${vista === "registros" ? "bg-lapis text-background" : "text-lapis hover:bg-accent-orange/10"}`}>
             Registros
@@ -782,7 +793,7 @@ const Index = () => {
                   <thead className="bg-lapis text-background"><tr>
                     <th className="text-left p-3 uppercase">Cama</th><th className="text-left p-3 uppercase">Parcela</th>
                     <th className="text-left p-3 uppercase">Tratamiento</th><th className="text-right p-3 uppercase">Tallo #</th>
-                    <th className="text-right p-3 uppercase">Longitud (cm)</th><th className="text-right p-3 uppercase">Piso</th><th className="text-right p-3 uppercase">Botones</th>
+                    <th className="text-right p-3 uppercase">Longitud (cm)</th><th className="text-right p-3 uppercase">Puntos</th><th className="text-right p-3 uppercase">Piso 2</th>
                   </tr></thead>
                   <tbody>{[...tallos].sort((a, b) =>
                     a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) ||
@@ -793,8 +804,8 @@ const Index = () => {
                       <td className="p-3 text-lapis">{t.tratamiento}</td>
                       <td className="p-3 text-right text-accent-orange font-bold">Tallo {t.numero}</td>
                       <td className="p-3 text-right">{t.longitud_cm}</td>
-                      <td className="p-3 text-right">{t.piso ?? "—"}</td>
                       <td className="p-3 text-right">{t.botones}</td>
+                      <td className="p-3 text-right">{t.botones_piso2 ?? "—"}</td>
                     </tr>))}</tbody>
                 </table></div>
               )}
@@ -831,7 +842,7 @@ const Index = () => {
               )}
             </section>
           </>
-        ) : (
+        ) : vista === "inventario" ? (
         <>
         {/* Carga */}
         <section className="border-2 border-lapis bg-white">
@@ -977,15 +988,27 @@ const Index = () => {
         </section>
 
         {/* ===== PRODUCTIVIDAD ===== */}
+        </>
+        ) : vista === "toma" ? (
+        <>
+        {!tomaListo && (
+          <div className="border-2 border-dashed border-lapis/30 p-12 text-center font-mono text-sm text-muted-foreground">
+            Sin inventario cargado. Carga las siembras en la pestaña "Cargar inventario".
+          </div>
+        )}
         {tomaListo && (
           <section className="border-2 border-lapis bg-white">
             <div className="border-b-2 border-lapis p-4 flex justify-between items-center gap-2 flex-wrap">
-              <span className="font-mono text-xs uppercase font-bold text-lapis">PRODUCTIVIDAD · {prodGroups.length} grupo{prodGroups.length > 1 ? "s" : ""}</span>
-              <button onClick={() => addGrupo(setProdGroups, emptyProd)} disabled={prodGroups.length >= MAX_GRUPOS}
+              <button onClick={() => toggleSec("prod")} className="font-mono text-xs uppercase font-bold text-lapis flex items-center gap-2 hover:text-accent-orange">
+                <span>{openSec.prod ? "▼" : "▶"}</span>
+                <span>PRODUCTIVIDAD · {prodGroups.length} grupo{prodGroups.length > 1 ? "s" : ""}</span>
+              </button>
+              {openSec.prod && <button onClick={() => addGrupo(setProdGroups, emptyProd)} disabled={prodGroups.length >= MAX_GRUPOS}
                 className="font-mono text-xs uppercase tracking-widest border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background disabled:opacity-30">
                 + Crear grupo
-              </button>
+              </button>}
             </div>
+            {openSec.prod && <>
             <div className={groupsRow}>
               {prodGroups.map((g, i) => {
                 const r = parseInt(g.ramos) || 0;
@@ -1059,6 +1082,7 @@ const Index = () => {
                 </table></div>
               </div>
             )}
+            </>}
           </section>
         )}
 
@@ -1066,12 +1090,16 @@ const Index = () => {
         {tomaListo && (
           <section className="border-2 border-lapis bg-white">
             <div className="border-b-2 border-lapis p-4 flex justify-between items-center gap-2 flex-wrap">
-              <span className="font-mono text-xs uppercase font-bold text-lapis">PÉRDIDAS · {perdGroups.length} grupo{perdGroups.length > 1 ? "s" : ""}</span>
-              <button onClick={() => addGrupo(setPerdGroups, emptyPerd)} disabled={perdGroups.length >= MAX_GRUPOS}
+              <button onClick={() => toggleSec("perd")} className="font-mono text-xs uppercase font-bold text-lapis flex items-center gap-2 hover:text-accent-orange">
+                <span>{openSec.perd ? "▼" : "▶"}</span>
+                <span>PÉRDIDAS · {perdGroups.length} grupo{perdGroups.length > 1 ? "s" : ""}</span>
+              </button>
+              {openSec.perd && <button onClick={() => addGrupo(setPerdGroups, emptyPerd)} disabled={perdGroups.length >= MAX_GRUPOS}
                 className="font-mono text-xs uppercase tracking-widest border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background disabled:opacity-30">
                 + Crear grupo
-              </button>
+              </button>}
             </div>
+            {openSec.perd && <>
             <div className={groupsRow}>
               {perdGroups.map((g, i) => {
                 const t = parseInt(g.tallos) || 0;
@@ -1152,6 +1180,7 @@ const Index = () => {
                 </table></div>
               </div>
             )}
+            </>}
           </section>
         )}
 
@@ -1159,17 +1188,23 @@ const Index = () => {
         {tomaListo && (
           <section className="border-2 border-lapis bg-white">
             <div className="border-b-2 border-lapis p-4 flex justify-between items-center gap-2 flex-wrap">
-              <span className="font-mono text-xs uppercase font-bold text-lapis">LONGITUD Y PUNTOS · {tallosGroups.length} grupo{tallosGroups.length > 1 ? "s" : ""}</span>
-              <button onClick={() => addGrupo(setTallosGroups, emptyTallos)} disabled={tallosGroups.length >= MAX_GRUPOS}
+              <button onClick={() => toggleSec("tallos")} className="font-mono text-xs uppercase font-bold text-lapis flex items-center gap-2 hover:text-accent-orange">
+                <span>{openSec.tallos ? "▼" : "▶"}</span>
+                <span>LONGITUD Y PUNTOS · {tallosGroups.length} grupo{tallosGroups.length > 1 ? "s" : ""}</span>
+              </button>
+              {openSec.tallos && <button onClick={() => addGrupo(setTallosGroups, emptyTallos)} disabled={tallosGroups.length >= MAX_GRUPOS}
                 className="font-mono text-xs uppercase tracking-widest border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background disabled:opacity-30">
                 + Crear grupo
-              </button>
+              </button>}
             </div>
+            {openSec.tallos && <>
             <div className={groupsRow}>
               {tallosGroups.map((g, i) => {
                 const lon = parseFloat(g.longitud) || 0;
                 const bot = parseInt(g.botones);
-                const valid = !!(g.cama && g.parcela && g.tratamiento && lon > 0 && !isNaN(bot) && bot >= 0);
+                const bot2 = parseInt(g.puntos2);
+                const validBase = !!(g.cama && g.parcela && g.tratamiento && lon > 0 && !isNaN(bot) && bot >= 0);
+                const valid = g.piso === "pisos" ? (validBase && !isNaN(bot2) && bot2 >= 0) : validBase;
                 const num = siguienteNumeroTallo(g.cama, g.parcela, g.tratamiento);
                 const trats = tratamientosDeCama(g.cama);
                 const nP = parcelasOpciones(g.cama, g.tratamiento);
@@ -1196,12 +1231,22 @@ const Index = () => {
                       </select></div>
                     <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Longitud (cm)</label>
                       <input type="number" min="0" step="0.1" value={g.longitud} onChange={(e) => setTallosGroups((p) => p.map((x, k) => k === i ? { ...x, longitud: e.target.value } : x))} className={inp} /></div>
-                    <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Piso</label>
-                      <select value={g.piso} onChange={(e) => setTallosGroups((p) => p.map((x, k) => k === i ? { ...x, piso: e.target.value } : x))} className={inp}>
-                        <option value="sin">Sin pisos</option><option value="1">1</option><option value="2">2</option>
+                    <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Tipo de registro</label>
+                      <select value={g.piso} onChange={(e) => setTallosGroups((p) => p.map((x, k) => k === i ? { ...x, piso: e.target.value, puntos2: e.target.value === "sin" ? "" : x.puntos2 } : x))} className={inp}>
+                        <option value="sin">Sin pisos</option>
+                        <option value="pisos">Por pisos</option>
                       </select></div>
-                    <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">N° puntos florales</label>
-                      <input type="number" min="0" value={g.botones} onChange={(e) => setTallosGroups((p) => p.map((x, k) => k === i ? { ...x, botones: e.target.value } : x))} className={inp} /></div>
+                    {g.piso === "sin" ? (
+                      <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">N° puntos florales</label>
+                        <input type="number" min="0" value={g.botones} onChange={(e) => setTallosGroups((p) => p.map((x, k) => k === i ? { ...x, botones: e.target.value } : x))} className={inp} /></div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Puntos piso 1</label>
+                          <input type="number" min="0" value={g.botones} onChange={(e) => setTallosGroups((p) => p.map((x, k) => k === i ? { ...x, botones: e.target.value } : x))} className={inp} /></div>
+                        <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Puntos piso 2</label>
+                          <input type="number" min="0" value={g.puntos2} onChange={(e) => setTallosGroups((p) => p.map((x, k) => k === i ? { ...x, puntos2: e.target.value } : x))} className={inp} /></div>
+                      </div>
+                    )}
                     <button onClick={() => añadirTalloGrupo(i)} disabled={!valid || isSaving(sk)} className={btnSec}>
                       {isSaving(sk) ? "Guardando…" : "Añadir"}
                     </button>
@@ -1234,6 +1279,7 @@ const Index = () => {
                 </table></div>
               </div>
             )}
+            </>}
           </section>
         )}
 
@@ -1241,12 +1287,16 @@ const Index = () => {
         {tomaListo && (
           <section className="border-2 border-lapis bg-white">
             <div className="border-b-2 border-lapis p-4 flex justify-between items-center gap-2 flex-wrap">
-              <span className="font-mono text-xs uppercase font-bold text-lapis">PESO DE RAMO · {ramosGroups.length} grupo{ramosGroups.length > 1 ? "s" : ""}</span>
-              <button onClick={() => addGrupo(setRamosGroups, emptyRamos)} disabled={ramosGroups.length >= MAX_GRUPOS}
+              <button onClick={() => toggleSec("ramos")} className="font-mono text-xs uppercase font-bold text-lapis flex items-center gap-2 hover:text-accent-orange">
+                <span>{openSec.ramos ? "▼" : "▶"}</span>
+                <span>PESO DE RAMO · {ramosGroups.length} grupo{ramosGroups.length > 1 ? "s" : ""}</span>
+              </button>
+              {openSec.ramos && <button onClick={() => addGrupo(setRamosGroups, emptyRamos)} disabled={ramosGroups.length >= MAX_GRUPOS}
                 className="font-mono text-xs uppercase tracking-widest border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background disabled:opacity-30">
                 + Crear grupo
-              </button>
+              </button>}
             </div>
+            {openSec.ramos && <>
             <div className={groupsRow}>
               {ramosGroups.map((g, i) => {
                 const tpr = parseInt(g.tallosPorRamo) || 0;
@@ -1316,16 +1366,12 @@ const Index = () => {
                 </table></div>
               </div>
             )}
+            </>}
           </section>
         )}
 
-        {data.length === 0 && (
-          <div className="border-2 border-dashed border-lapis/30 p-12 text-center font-mono text-sm text-muted-foreground">
-            Sin datos. Sube un archivo Excel para comenzar.
-          </div>
-        )}
         </>
-        )}
+        ) : null}
       </main>
       )}
 
