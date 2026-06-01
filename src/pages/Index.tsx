@@ -1286,12 +1286,16 @@ const Index = () => {
         {tomaListo && (
           <section className="border-2 border-lapis bg-white">
             <div className="border-b-2 border-lapis p-4 flex justify-between items-center gap-2 flex-wrap">
-              <span className="font-mono text-xs uppercase font-bold text-lapis">PESO DE RAMO · {ramosGroups.length} grupo{ramosGroups.length > 1 ? "s" : ""}</span>
-              <button onClick={() => addGrupo(setRamosGroups, emptyRamos)} disabled={ramosGroups.length >= MAX_GRUPOS}
+              <button onClick={() => toggleSec("ramos")} className="font-mono text-xs uppercase font-bold text-lapis flex items-center gap-2 hover:text-accent-orange">
+                <span>{openSec.ramos ? "▼" : "▶"}</span>
+                <span>PESO DE RAMO · {ramosGroups.length} grupo{ramosGroups.length > 1 ? "s" : ""}</span>
+              </button>
+              {openSec.ramos && <button onClick={() => addGrupo(setRamosGroups, emptyRamos)} disabled={ramosGroups.length >= MAX_GRUPOS}
                 className="font-mono text-xs uppercase tracking-widest border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background disabled:opacity-30">
                 + Crear grupo
-              </button>
+              </button>}
             </div>
+            {openSec.ramos && <>
             <div className={groupsRow}>
               {ramosGroups.map((g, i) => {
                 const tpr = parseInt(g.tallosPorRamo) || 0;
@@ -1361,14 +1365,10 @@ const Index = () => {
                 </table></div>
               </div>
             )}
+            </>}
           </section>
         )}
 
-        {data.length === 0 && (
-          <div className="border-2 border-dashed border-lapis/30 p-12 text-center font-mono text-sm text-muted-foreground">
-            Sin datos. Sube un archivo Excel para comenzar.
-          </div>
-        )}
         </>
         )}
       </main>
