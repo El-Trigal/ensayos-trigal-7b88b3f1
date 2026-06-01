@@ -1082,6 +1082,7 @@ const Index = () => {
                 </table></div>
               </div>
             )}
+            </>}
           </section>
         )}
 
@@ -1089,12 +1090,16 @@ const Index = () => {
         {tomaListo && (
           <section className="border-2 border-lapis bg-white">
             <div className="border-b-2 border-lapis p-4 flex justify-between items-center gap-2 flex-wrap">
-              <span className="font-mono text-xs uppercase font-bold text-lapis">PÉRDIDAS · {perdGroups.length} grupo{perdGroups.length > 1 ? "s" : ""}</span>
-              <button onClick={() => addGrupo(setPerdGroups, emptyPerd)} disabled={perdGroups.length >= MAX_GRUPOS}
+              <button onClick={() => toggleSec("perd")} className="font-mono text-xs uppercase font-bold text-lapis flex items-center gap-2 hover:text-accent-orange">
+                <span>{openSec.perd ? "▼" : "▶"}</span>
+                <span>PÉRDIDAS · {perdGroups.length} grupo{perdGroups.length > 1 ? "s" : ""}</span>
+              </button>
+              {openSec.perd && <button onClick={() => addGrupo(setPerdGroups, emptyPerd)} disabled={perdGroups.length >= MAX_GRUPOS}
                 className="font-mono text-xs uppercase tracking-widest border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background disabled:opacity-30">
                 + Crear grupo
-              </button>
+              </button>}
             </div>
+            {openSec.perd && <>
             <div className={groupsRow}>
               {perdGroups.map((g, i) => {
                 const t = parseInt(g.tallos) || 0;
