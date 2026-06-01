@@ -1180,6 +1180,7 @@ const Index = () => {
                 </table></div>
               </div>
             )}
+            </>}
           </section>
         )}
 
@@ -1187,12 +1188,16 @@ const Index = () => {
         {tomaListo && (
           <section className="border-2 border-lapis bg-white">
             <div className="border-b-2 border-lapis p-4 flex justify-between items-center gap-2 flex-wrap">
-              <span className="font-mono text-xs uppercase font-bold text-lapis">LONGITUD Y PUNTOS · {tallosGroups.length} grupo{tallosGroups.length > 1 ? "s" : ""}</span>
-              <button onClick={() => addGrupo(setTallosGroups, emptyTallos)} disabled={tallosGroups.length >= MAX_GRUPOS}
+              <button onClick={() => toggleSec("tallos")} className="font-mono text-xs uppercase font-bold text-lapis flex items-center gap-2 hover:text-accent-orange">
+                <span>{openSec.tallos ? "▼" : "▶"}</span>
+                <span>LONGITUD Y PUNTOS · {tallosGroups.length} grupo{tallosGroups.length > 1 ? "s" : ""}</span>
+              </button>
+              {openSec.tallos && <button onClick={() => addGrupo(setTallosGroups, emptyTallos)} disabled={tallosGroups.length >= MAX_GRUPOS}
                 className="font-mono text-xs uppercase tracking-widest border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background disabled:opacity-30">
                 + Crear grupo
-              </button>
+              </button>}
             </div>
+            {openSec.tallos && <>
             <div className={groupsRow}>
               {tallosGroups.map((g, i) => {
                 const lon = parseFloat(g.longitud) || 0;
