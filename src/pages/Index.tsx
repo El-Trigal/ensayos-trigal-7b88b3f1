@@ -988,15 +988,27 @@ const Index = () => {
         </section>
 
         {/* ===== PRODUCTIVIDAD ===== */}
+        </>
+        ) : vista === "toma" ? (
+        <>
+        {!tomaListo && (
+          <div className="border-2 border-dashed border-lapis/30 p-12 text-center font-mono text-sm text-muted-foreground">
+            Sin inventario cargado. Carga las siembras en la pestaña "Cargar inventario".
+          </div>
+        )}
         {tomaListo && (
           <section className="border-2 border-lapis bg-white">
             <div className="border-b-2 border-lapis p-4 flex justify-between items-center gap-2 flex-wrap">
-              <span className="font-mono text-xs uppercase font-bold text-lapis">PRODUCTIVIDAD · {prodGroups.length} grupo{prodGroups.length > 1 ? "s" : ""}</span>
-              <button onClick={() => addGrupo(setProdGroups, emptyProd)} disabled={prodGroups.length >= MAX_GRUPOS}
+              <button onClick={() => toggleSec("prod")} className="font-mono text-xs uppercase font-bold text-lapis flex items-center gap-2 hover:text-accent-orange">
+                <span>{openSec.prod ? "▼" : "▶"}</span>
+                <span>PRODUCTIVIDAD · {prodGroups.length} grupo{prodGroups.length > 1 ? "s" : ""}</span>
+              </button>
+              {openSec.prod && <button onClick={() => addGrupo(setProdGroups, emptyProd)} disabled={prodGroups.length >= MAX_GRUPOS}
                 className="font-mono text-xs uppercase tracking-widest border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background disabled:opacity-30">
                 + Crear grupo
-              </button>
+              </button>}
             </div>
+            {openSec.prod && <>
             <div className={groupsRow}>
               {prodGroups.map((g, i) => {
                 const r = parseInt(g.ramos) || 0;
