@@ -250,6 +250,7 @@ const Index = () => {
     if (tlls) setTallos(tlls.map((r: any) => ({
       id: r.id, cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento,
       numero: r.numero, longitud_cm: Number(r.longitud_cm), botones: r.botones,
+      botones_piso2: r.botones_piso2 ?? null,
       piso: r.piso ?? null, fecha: r.created_at, bloque: r.bloque ?? null,
     })));
     if (rmps) setRamosPeso(rmps.map((r: any) => ({
