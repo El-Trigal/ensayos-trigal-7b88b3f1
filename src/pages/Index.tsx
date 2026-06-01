@@ -712,6 +712,10 @@ const Index = () => {
             className={`flex-1 font-mono text-xs uppercase tracking-widest px-6 py-3 transition-colors ${vista === "inventario" ? "bg-lapis text-background" : "text-lapis hover:bg-accent-orange/10"}`}>
             Cargar inventario
           </button>
+          <button onClick={() => setVista("toma")}
+            className={`flex-1 font-mono text-xs uppercase tracking-widest px-6 py-3 transition-colors ${vista === "toma" ? "bg-lapis text-background" : "text-lapis hover:bg-accent-orange/10"}`}>
+            Toma datos
+          </button>
           <button onClick={() => setVista("registros")}
             className={`flex-1 font-mono text-xs uppercase tracking-widest px-6 py-3 transition-colors ${vista === "registros" ? "bg-lapis text-background" : "text-lapis hover:bg-accent-orange/10"}`}>
             Registros
