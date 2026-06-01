@@ -138,11 +138,11 @@ const Index = () => {
   // ===== Grupos dinámicos (1..4) =====
   type ProdGroup = { cama: string; variedad: string; parcela: string; tratamiento: string; ramos: string; tallos: string };
   type PerdGroup = { cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: string };
-  type TallosGroup = { cama: string; parcela: string; tratamiento: string; longitud: string; botones: string; piso: string };
+  type TallosGroup = { cama: string; parcela: string; tratamiento: string; longitud: string; botones: string; puntos2: string; piso: string };
   type RamosGroup = { cama: string; parcela: string; tratamiento: string; tallosPorRamo: string; peso: string };
   const emptyProd = (): ProdGroup => ({ cama: "", variedad: "", parcela: "", tratamiento: "", ramos: "", tallos: "" });
   const emptyPerd = (): PerdGroup => ({ cama: "", variedad: "", parcela: "", tratamiento: "", causa: "", tallos: "" });
-  const emptyTallos = (): TallosGroup => ({ cama: "", parcela: "", tratamiento: "", longitud: "", botones: "", piso: "sin" });
+  const emptyTallos = (): TallosGroup => ({ cama: "", parcela: "", tratamiento: "", longitud: "", botones: "", puntos2: "", piso: "sin" });
   const emptyRamos = (): RamosGroup => ({ cama: "", parcela: "", tratamiento: "", tallosPorRamo: "", peso: "" });
   const [prodGroups, setProdGroups] = useState<ProdGroup[]>([emptyProd()]);
   const [perdGroups, setPerdGroups] = useState<PerdGroup[]>([emptyPerd()]);
