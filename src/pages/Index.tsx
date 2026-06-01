@@ -469,7 +469,7 @@ const Index = () => {
     tallos.forEach((r) => {
       const key = `${r.cama}||${r.parcela}||${r.tratamiento}`;
       const cur = m.get(key) ?? { cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento, n: 0, sumLong: 0, sumBot: 0 };
-      cur.n += 1; cur.sumLong += r.longitud_cm; cur.sumBot += r.botones;
+      cur.n += 1; cur.sumLong += r.longitud_cm; cur.sumBot += r.botones + (r.botones_piso2 ?? 0);
       m.set(key, cur);
     });
     return Array.from(m.values()).sort((a, b) =>
