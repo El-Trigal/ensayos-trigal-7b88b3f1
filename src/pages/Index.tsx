@@ -1371,6 +1371,7 @@ const Index = () => {
 
         </>
         )}
+        ) : null}
       </main>
       )}
 
