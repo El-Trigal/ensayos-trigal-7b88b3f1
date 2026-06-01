@@ -115,7 +115,7 @@ const Index = () => {
   type Perdida = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; fecha: string; bloque: number | null; plantas_iniciales: number | null };
   const [perdidas, setPerdidas] = useState<Perdida[]>([]);
 
-  type Tallo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; longitud_cm: number; botones: number; piso: string | null; fecha: string; bloque: number | null };
+  type Tallo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; longitud_cm: number; botones: number; botones_piso2: number | null; piso: string | null; fecha: string; bloque: number | null };
   const [tallos, setTallos] = useState<Tallo[]>([]);
 
   type Ramo = { id: string; cama: string; parcela: string; tratamiento: string; numero: number; tallos_por_ramo: number; peso_g: number; fecha: string; bloque: number | null };
