@@ -1203,12 +1203,22 @@ const Index = () => {
                       </select></div>
                     <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Longitud (cm)</label>
                       <input type="number" min="0" step="0.1" value={g.longitud} onChange={(e) => setTallosGroups((p) => p.map((x, k) => k === i ? { ...x, longitud: e.target.value } : x))} className={inp} /></div>
-                    <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Piso</label>
-                      <select value={g.piso} onChange={(e) => setTallosGroups((p) => p.map((x, k) => k === i ? { ...x, piso: e.target.value } : x))} className={inp}>
-                        <option value="sin">Sin pisos</option><option value="1">1</option><option value="2">2</option>
+                    <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Tipo de registro</label>
+                      <select value={g.piso} onChange={(e) => setTallosGroups((p) => p.map((x, k) => k === i ? { ...x, piso: e.target.value, puntos2: e.target.value === "sin" ? "" : x.puntos2 } : x))} className={inp}>
+                        <option value="sin">Sin pisos</option>
+                        <option value="pisos">Por pisos</option>
                       </select></div>
-                    <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">N° puntos florales</label>
-                      <input type="number" min="0" value={g.botones} onChange={(e) => setTallosGroups((p) => p.map((x, k) => k === i ? { ...x, botones: e.target.value } : x))} className={inp} /></div>
+                    {g.piso === "sin" ? (
+                      <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">N° puntos florales</label>
+                        <input type="number" min="0" value={g.botones} onChange={(e) => setTallosGroups((p) => p.map((x, k) => k === i ? { ...x, botones: e.target.value } : x))} className={inp} /></div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Puntos piso 1</label>
+                          <input type="number" min="0" value={g.botones} onChange={(e) => setTallosGroups((p) => p.map((x, k) => k === i ? { ...x, botones: e.target.value } : x))} className={inp} /></div>
+                        <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Puntos piso 2</label>
+                          <input type="number" min="0" value={g.puntos2} onChange={(e) => setTallosGroups((p) => p.map((x, k) => k === i ? { ...x, puntos2: e.target.value } : x))} className={inp} /></div>
+                      </div>
+                    )}
                     <button onClick={() => añadirTalloGrupo(i)} disabled={!valid || isSaving(sk)} className={btnSec}>
                       {isSaving(sk) ? "Guardando…" : "Añadir"}
                     </button>
