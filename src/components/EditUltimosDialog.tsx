@@ -30,9 +30,10 @@ type Props = {
   registros: any[]; // array completo, ya ordenado desc por created_at
   siembras: SiembraLite[];
   onSaved: () => void;
+  causasExtra?: string[];
 };
 
-export default function EditUltimosDialog({ open, onClose, tipo, registros, siembras, onSaved }: Props) {
+export default function EditUltimosDialog({ open, onClose, tipo, registros, siembras, onSaved, causasExtra = [] }: Props) {
   const [rows, setRows] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -97,6 +98,7 @@ export default function EditUltimosDialog({ open, onClose, tipo, registros, siem
         } else if (tipo === "tallos") {
           payload.longitud_cm = Number(r.longitud_cm) || 0;
           payload.botones = Number(r.botones) || 0;
+          payload.piso = r.piso === "sin" || !r.piso ? null : String(r.piso);
         } else if (tipo === "ramos") {
           payload.tallos_por_ramo = Number(r.tallos_por_ramo) || 0;
           payload.peso_g = Number(r.peso_g) || 0;
@@ -178,7 +180,7 @@ export default function EditUltimosDialog({ open, onClose, tipo, registros, siem
                         Causa
                         <select className={inputCls} value={r.causa ?? ""} onChange={(e) => upd(i, { causa: e.target.value })}>
                           <option value="">—</option>
-                          {CAUSAS.map((c) => <option key={c} value={c}>{c}</option>)}
+                          {[...CAUSAS, ...causasExtra].map((c) => <option key={c} value={c}>{c}</option>)}
                         </select>
                       </label>
                       <label className="font-mono text-[10px] uppercase">
@@ -192,6 +194,14 @@ export default function EditUltimosDialog({ open, onClose, tipo, registros, siem
                       <label className="font-mono text-[10px] uppercase">
                         Longitud (cm)
                         <input type="number" step="0.1" className={inputCls} value={r.longitud_cm ?? 0} onChange={(e) => upd(i, { longitud_cm: e.target.value })} />
+                      </label>
+                      <label className="font-mono text-[10px] uppercase">
+                        Piso
+                        <select className={inputCls} value={r.piso ?? "sin"} onChange={(e) => upd(i, { piso: e.target.value })}>
+                          <option value="sin">Sin pisos</option>
+                          <option value="1">1</option>
+                          <option value="2">2</option>
+                        </select>
                       </label>
                       <label className="font-mono text-[10px] uppercase">
                         Botones

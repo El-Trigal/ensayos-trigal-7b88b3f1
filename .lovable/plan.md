@@ -1,41 +1,89 @@
+# Plan de mejoras
 
-# Cambios solicitados
+## 1. Tratamientos por cama (nuevo modelo)
 
-## 1. Orden ascendente en Excel/CSV de Tallos y Ramos
+**Base de datos** — nueva tabla `tratamientos`:
+- `id`, `ensayo_codigo`, `cama`, `nombre`, `parcelas` (int), `plantas_por_parcela` (int), `created_at`
+- Único por `(ensayo_codigo, cama, nombre)`
+- RLS público (igual que el resto), GRANT a anon/authenticated/service_role
 
-En `src/lib/exportRegistros.ts`:
-- En `exportTallos`: ordenar `rows` por `cama`, `parcela`, `tratamiento`, y luego por `numero` ascendente (1, 2, 3...) antes de mapear a filas.
-- En `exportRamos`: mismo ordenamiento por `cama`, `parcela`, `tratamiento`, `numero` ascendente.
-- `exportProductividad` y `exportPerdidas` no llevan numeración de tallo/ramo, así que se dejan igual (a menos que quieras también un orden específico ahí — avisa).
+**UI inventario** (sección "Cama: configuración"):
+- Antes de los inputs actuales (parcelas / plantas por parcela), agregar input **"Tratamiento (nombre)"**
+- Botón **"Añadir tratamiento"** que guarda en la tabla
+- Lista de tratamientos ya creados para esa cama, con botón eliminar
+- Los campos "parcelas" y "plantas por parcela" ahora pertenecen a cada tratamiento (no a la cama global)
 
-## 2. Editar los últimos 3 registros en cada sección
+## 2. Selectores en secciones de toma de datos
 
-En `src/pages/Index.tsx`, en cada una de las 4 tablas de acumulado (Productividad, Pérdidas, Longitud y Botones, Peso de Ramo):
+En cada grupo (Productividad, Pérdidas, Longitud, Peso de ramo):
+- **Tratamiento**: pasa de input de texto a `<Select>` con tratamientos de la cama seleccionada (filtrados desde la tabla `tratamientos` por `ensayo_codigo` + `cama`)
+- **Parcela**: el rango de opciones (1..N) se calcula desde `parcelas` del tratamiento seleccionado, no desde el estado global
+- Si la cama no tiene tratamientos, el selector dice "Sin tratamientos para esta cama — créalos en Inventario"
 
-- Agregar un botón **"Editar últimos 3"** al lado del botón **"Limpiar"** existente.
-- Al hacer clic, abre un diálogo (`Dialog` de shadcn) que muestra los **3 registros más recientes** del ensayo activo (ordenados por `created_at` desc, limitados a 3).
-- Cada fila del diálogo es editable con inputs para:
-  - **Productividad**: cama, parcela, tratamiento, ramos, tallos por ramo (la variedad se recalcula automáticamente desde el inventario según la cama; total se recalcula = ramos × tallos por ramo)
-  - **Pérdidas**: cama, parcela, tratamiento, causa, tallos (variedad y plantas iniciales se recalculan desde inventario al cambiar cama)
-  - **Longitud y Botones**: cama, parcela, tratamiento, longitud_cm, botones (variedad se recalcula)
-  - **Peso de Ramo**: cama, parcela, tratamiento, tallos por ramo, peso_g
-- Botón **Guardar** por fila (o uno global "Guardar cambios") que hace `UPDATE` en Supabase filtrando por `id` y `ensayo_codigo`.
-- Tras guardar, refresca la lista local y cierra el diálogo.
+## 3. Grupos dinámicos horizontales (máx 4)
 
-### Cambios técnicos asociados
+Reemplazar los 3 grupos fijos por:
+- Estado inicial: **1 grupo** por sección
+- Botón **"+ Crear grupo"** (deshabilitado al llegar a 4) y botón **× eliminar grupo** por tarjeta
+- Layout: contenedor con `flex overflow-x-auto snap-x` para scroll horizontal en móvil; cada grupo es una tarjeta de ancho mínimo (~280px) en lugar de apilarse verticalmente
+- Aplica a las 4 secciones
 
-- Las políticas RLS actuales solo permiten `SELECT`, `INSERT`, `DELETE` (no `UPDATE`). Hay que **crear una migración** que añada políticas `UPDATE` públicas para las tablas: `productividad`, `perdidas`, `tallos`, `ramos_peso`.
-- No se modifica el esquema; solo se añaden políticas.
+## 4. Campo "Piso" en Longitud y puntos
 
-## Resumen de archivos a modificar
+**Base de datos** — agregar columna `piso` (text, nullable) a `tallos`:
+- Valores: `null` (sin pisos), `"1"`, `"2"`
 
+**UI** — en cada grupo de Longitud y puntos, agregar `<Select>` "Piso" antes de "Botones":
+- Opciones: "Sin pisos", "1", "2"
+- Default: "Sin pisos"
+- El valor se guarda con el registro (null si "Sin pisos")
+
+## 5. Columna "Piso" en Excel de Longitud y puntos
+
+En `exportTallos`:
+- Detectar si algún registro exportado tiene `piso != null`
+- Si sí, insertar columna **"Piso"** entre "Longitud del tallo (cm)" y "Número de puntos"
+- Si todos son null, no incluirla
+
+## 6. Causas personalizadas por ensayo
+
+**Base de datos** — nueva tabla `causas_personalizadas`:
+- `id`, `ensayo_codigo`, `nombre`, `created_at`
+- Único por `(ensayo_codigo, nombre)`
+- RLS público, GRANT estándar
+
+**UI** — al lado del Select de Causa en cada grupo de Pérdidas:
+- Botón **"+ Añadir causa"** que abre un mini-dialog con input + guardar
+- Las causas se combinan: las 15 fijas (`CAUSAS`) + las personalizadas del ensayo activo
+- Al exportar Excel, las causas personalizadas se incluyen como columnas extra al final
+
+## 7. Anti-duplicados (estado de guardado)
+
+Para cada handler `añadirX`:
+- Estado `saving: { [groupIndex: number]: boolean }` por sección (o un Set de claves activas)
+- Botón "Añadir" → al click: `setSaving(true)`, disabled, texto cambia a "Guardando…"
+- En el `finally` del try/catch: `setSaving(false)`
+- Mantener toast de éxito/error existente (ya hay)
+- Aplicar también a botones "Añadir tratamiento" y "Añadir causa"
+
+## Detalles técnicos
+
+**Archivos afectados:**
 ```text
-supabase/migrations/<nuevo>.sql   → policies UPDATE para 4 tablas
-src/lib/exportRegistros.ts        → sort ascendente por numero
-src/pages/Index.tsx               → 4 diálogos "Editar últimos 3"
+supabase/migrations/<nuevo>.sql       → tabla tratamientos, tabla causas_personalizadas, columna piso en tallos
+src/pages/Index.tsx                   → toda la lógica nueva (tratamientos, grupos dinámicos, piso, causas, anti-duplicados)
+src/lib/exportRegistros.ts            → columna Piso condicional, columnas de causas personalizadas
+src/components/EditUltimosDialog.tsx  → soporte para editar piso en tallos y para nuevas causas
 ```
+
+**Compatibilidad retro:**
+- Registros viejos sin tratamiento en la tabla `tratamientos` siguen funcionando porque el valor `tratamiento` está guardado en cada fila de `productividad`/`perdidas`/`tallos`/`ramos_peso`
+- Para usar los nuevos selectores el usuario debe crear tratamientos en Inventario
 
 ## Preguntas antes de implementar
 
-1. ¿Confirmas que el orden ascendente solo se aplica al archivo descargable, no a la tabla en pantalla?
-2. En el diálogo de edición, ¿quieres también poder **eliminar** un registro individual, o solo editar?
+1. **Migración de los inputs viejos**: actualmente "Parcelas" y "Plantas por parcela" son globales por cama (un solo valor). ¿Quieres que esos campos desaparezcan de la UI (reemplazados 100% por la lista de tratamientos), o que se mantengan como "valor por defecto" si no hay tratamientos creados?
+
+2. **Causas personalizadas en Excel**: ¿las quieres como columnas adicionales al final (después de "Vegetativo"), o agrupadas en una sola columna "Otras causas"?
+
+3. **Grupos dinámicos**: cuando se elimina un grupo con datos parcialmente llenos, ¿confirmar antes de eliminar, o eliminar directamente?
