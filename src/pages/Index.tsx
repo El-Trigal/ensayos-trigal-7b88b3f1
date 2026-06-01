@@ -564,19 +564,23 @@ const Index = () => {
     const g = tallosGroups[i];
     const lon = parseFloat(g.longitud) || 0;
     const bot = parseInt(g.botones);
+    const esPisos = g.piso === "pisos";
+    const bot2 = parseInt(g.puntos2);
     if (!g.cama || !g.parcela || !g.tratamiento || lon <= 0 || isNaN(bot) || bot < 0) return;
+    if (esPisos && (isNaN(bot2) || bot2 < 0)) return;
     setSavingK(key, true);
     try {
       const numero = siguienteNumeroTallo(g.cama, g.parcela, g.tratamiento);
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
-      const pisoVal = g.piso === "sin" ? null : g.piso;
       const { error } = await supabase.from("tallos").insert({
         cama: g.cama, parcela: g.parcela, tratamiento: g.tratamiento,
-        numero, longitud_cm: lon, botones: bot, piso: pisoVal,
+        numero, longitud_cm: lon, botones: bot,
+        botones_piso2: esPisos ? bot2 : null,
+        piso: esPisos ? "pisos" : null,
         ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
       });
       if (error) throw error;
-      setTallosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, longitud: "", botones: "" } : x));
+      setTallosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, longitud: "", botones: "", puntos2: "" } : x));
       toast.success(`Tallo ${numero} registrado`);
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
