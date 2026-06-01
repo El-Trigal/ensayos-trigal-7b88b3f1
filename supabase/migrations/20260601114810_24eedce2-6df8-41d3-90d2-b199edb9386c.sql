@@ -1,0 +1,1 @@
+ALTER TABLE public.tallos ADD COLUMN IF NOT EXISTS botones_piso2 integer;
