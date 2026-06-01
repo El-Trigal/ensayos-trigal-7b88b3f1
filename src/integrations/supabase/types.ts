@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      causas_personalizadas: {
+        Row: {
+          created_at: string
+          ensayo_codigo: string
+          id: string
+          nombre: string
+        }
+        Insert: {
+          created_at?: string
+          ensayo_codigo: string
+          id?: string
+          nombre: string
+        }
+        Update: {
+          created_at?: string
+          ensayo_codigo?: string
+          id?: string
+          nombre?: string
+        }
+        Relationships: []
+      }
       datasets: {
         Row: {
           columns: Json
@@ -229,6 +250,7 @@ export type Database = {
           longitud_cm: number
           numero: number
           parcela: string
+          piso: string | null
           tratamiento: string
           variedad: string | null
         }
@@ -242,6 +264,7 @@ export type Database = {
           longitud_cm?: number
           numero: number
           parcela: string
+          piso?: string | null
           tratamiento: string
           variedad?: string | null
         }
@@ -255,8 +278,39 @@ export type Database = {
           longitud_cm?: number
           numero?: number
           parcela?: string
+          piso?: string | null
           tratamiento?: string
           variedad?: string | null
+        }
+        Relationships: []
+      }
+      tratamientos: {
+        Row: {
+          cama: string
+          created_at: string
+          ensayo_codigo: string
+          id: string
+          nombre: string
+          parcelas: number
+          plantas_por_parcela: number
+        }
+        Insert: {
+          cama: string
+          created_at?: string
+          ensayo_codigo: string
+          id?: string
+          nombre: string
+          parcelas?: number
+          plantas_por_parcela?: number
+        }
+        Update: {
+          cama?: string
+          created_at?: string
+          ensayo_codigo?: string
+          id?: string
+          nombre?: string
+          parcelas?: number
+          plantas_por_parcela?: number
         }
         Relationships: []
       }
