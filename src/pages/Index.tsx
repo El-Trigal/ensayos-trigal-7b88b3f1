@@ -1370,7 +1370,6 @@ const Index = () => {
         )}
 
         </>
-        )}
         ) : null}
       </main>
       )}
