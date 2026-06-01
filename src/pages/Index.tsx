@@ -789,7 +789,7 @@ const Index = () => {
                   <thead className="bg-lapis text-background"><tr>
                     <th className="text-left p-3 uppercase">Cama</th><th className="text-left p-3 uppercase">Parcela</th>
                     <th className="text-left p-3 uppercase">Tratamiento</th><th className="text-right p-3 uppercase">Tallo #</th>
-                    <th className="text-right p-3 uppercase">Longitud (cm)</th><th className="text-right p-3 uppercase">Piso</th><th className="text-right p-3 uppercase">Botones</th>
+                    <th className="text-right p-3 uppercase">Longitud (cm)</th><th className="text-right p-3 uppercase">Puntos</th><th className="text-right p-3 uppercase">Piso 2</th>
                   </tr></thead>
                   <tbody>{[...tallos].sort((a, b) =>
                     a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) ||
@@ -800,8 +800,8 @@ const Index = () => {
                       <td className="p-3 text-lapis">{t.tratamiento}</td>
                       <td className="p-3 text-right text-accent-orange font-bold">Tallo {t.numero}</td>
                       <td className="p-3 text-right">{t.longitud_cm}</td>
-                      <td className="p-3 text-right">{t.piso ?? "—"}</td>
                       <td className="p-3 text-right">{t.botones}</td>
+                      <td className="p-3 text-right">{t.botones_piso2 ?? "—"}</td>
                     </tr>))}</tbody>
                 </table></div>
               )}
