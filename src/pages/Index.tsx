@@ -1176,7 +1176,9 @@ const Index = () => {
               {tallosGroups.map((g, i) => {
                 const lon = parseFloat(g.longitud) || 0;
                 const bot = parseInt(g.botones);
-                const valid = !!(g.cama && g.parcela && g.tratamiento && lon > 0 && !isNaN(bot) && bot >= 0);
+                const bot2 = parseInt(g.puntos2);
+                const validBase = !!(g.cama && g.parcela && g.tratamiento && lon > 0 && !isNaN(bot) && bot >= 0);
+                const valid = g.piso === "pisos" ? (validBase && !isNaN(bot2) && bot2 >= 0) : validBase;
                 const num = siguienteNumeroTallo(g.cama, g.parcela, g.tratamiento);
                 const trats = tratamientosDeCama(g.cama);
                 const nP = parcelasOpciones(g.cama, g.tratamiento);
