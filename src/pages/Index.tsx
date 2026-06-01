@@ -842,7 +842,7 @@ const Index = () => {
               )}
             </section>
           </>
-        ) : (
+        ) : vista === "inventario" ? (
         <>
         {/* Carga */}
         <section className="border-2 border-lapis bg-white">
