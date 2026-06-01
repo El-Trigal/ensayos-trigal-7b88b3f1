@@ -253,6 +253,7 @@ export type TalloRow = {
   cama: string; parcela: string; tratamiento: string;
   numero: number; longitud_cm: number; botones: number; fecha: string;
   bloque?: number | null;
+  piso?: string | null;
 };
 
 export const exportTallos = (
@@ -260,10 +261,13 @@ export const exportTallos = (
   siembrasMap: Map<string, SiembraInfo>,
   format: "xlsx" | "csv",
 ) => {
+  const incluirPiso = rows.some((r) => r.piso != null && r.piso !== "");
   const headers = [
     "Fecha siembra", "Fecha de muestreo", "Semana del año", "Días después de la siembra",
     "Variedad", "Bloque", "Cama", "Lado", "Parcela", "Tratamiento",
-    "No del Tallo", "Longitud del tallo (cm)", "Número de puntos",
+    "No del Tallo", "Longitud del tallo (cm)",
+    ...(incluirPiso ? ["Piso"] : []),
+    "Número de puntos",
   ];
   const sorted = [...rows].sort((a, b) =>
     (a.cama ?? "").localeCompare(b.cama ?? "") ||
@@ -275,7 +279,7 @@ export const exportTallos = (
     const info = lookupSiembra(siembrasMap, r.cama);
     const { numero, lado } = parseCama(r.cama);
     const fecha = fmtDate(r.fecha);
-    return [
+    const row: any[] = [
       info.fechaSiembra ?? "",
       fecha,
       getISOWeek(fecha),
@@ -288,8 +292,10 @@ export const exportTallos = (
       r.tratamiento,
       r.numero,
       r.longitud_cm,
-      r.botones,
     ];
+    if (incluirPiso) row.push(r.piso ?? "");
+    row.push(r.botones);
+    return row;
   });
   downloadFile(data, headers, "Longitud y Numero de botones", format, "Hoja1");
 };
