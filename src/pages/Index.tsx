@@ -177,6 +177,8 @@ const Index = () => {
   const setSavingK = (k: string, v: boolean) => setSaving((p) => ({ ...p, [k]: v }));
 
   const [editTipo, setEditTipo] = useState<null | "prod" | "perd" | "tallos" | "ramos">(null);
+  const [openHistorial, setOpenHistorial] = useState(false);
+  const { signOut, profile, user } = useAuth();
 
   const siembrasMap = useMemo(() => buildSiembrasMap(data as any), [data]);
 
