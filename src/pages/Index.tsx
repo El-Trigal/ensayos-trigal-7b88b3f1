@@ -460,28 +460,30 @@ const Index = () => {
 
   // ===== Acumulados (sin cambios) =====
   const acumulados = useMemo(() => {
-    const m = new Map<string, { cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; n: number }>();
+    const m = new Map<string, { fecha: string; cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; n: number }>();
     registros.forEach((r) => {
-      const key = `${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}`;
-      const cur = m.get(key) ?? { cama: r.cama, variedad: r.variedad, parcela: r.parcela, tratamiento: r.tratamiento, ramos: 0, tallos: 0, total: 0, n: 0 };
+      const fecha = (r.fecha || "").slice(0, 10);
+      const key = `${fecha}||${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}`;
+      const cur = m.get(key) ?? { fecha, cama: r.cama, variedad: r.variedad, parcela: r.parcela, tratamiento: r.tratamiento, ramos: 0, tallos: 0, total: 0, n: 0 };
       cur.ramos += r.ramos; cur.tallos += r.tallos; cur.total += r.total; cur.n += 1;
       m.set(key, cur);
     });
     return Array.from(m.values()).sort((a, b) =>
-      a.cama.localeCompare(b.cama) || a.variedad.localeCompare(b.variedad) || Number(a.parcela) - Number(b.parcela)
+      b.fecha.localeCompare(a.fecha) || a.cama.localeCompare(b.cama) || a.variedad.localeCompare(b.variedad) || Number(a.parcela) - Number(b.parcela)
     );
   }, [registros]);
 
   const acumuladosPerdidas = useMemo(() => {
-    const m = new Map<string, { cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; n: number }>();
+    const m = new Map<string, { fecha: string; cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; n: number }>();
     perdidas.forEach((r) => {
-      const key = `${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}||${r.causa}`;
-      const cur = m.get(key) ?? { cama: r.cama, variedad: r.variedad, parcela: r.parcela, tratamiento: r.tratamiento, causa: r.causa, tallos: 0, n: 0 };
+      const fecha = (r.fecha || "").slice(0, 10);
+      const key = `${fecha}||${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}||${r.causa}`;
+      const cur = m.get(key) ?? { fecha, cama: r.cama, variedad: r.variedad, parcela: r.parcela, tratamiento: r.tratamiento, causa: r.causa, tallos: 0, n: 0 };
       cur.tallos += r.tallos; cur.n += 1;
       m.set(key, cur);
     });
     return Array.from(m.values()).sort((a, b) =>
-      a.cama.localeCompare(b.cama) || a.variedad.localeCompare(b.variedad) || Number(a.parcela) - Number(b.parcela) || a.causa.localeCompare(b.causa)
+      b.fecha.localeCompare(a.fecha) || a.cama.localeCompare(b.cama) || a.variedad.localeCompare(b.variedad) || Number(a.parcela) - Number(b.parcela) || a.causa.localeCompare(b.causa)
     );
   }, [perdidas]);
 
