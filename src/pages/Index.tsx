@@ -10,6 +10,9 @@ import {
   exportRamos,
 } from "@/lib/exportRegistros";
 import EditUltimosDialog from "@/components/EditUltimosDialog";
+import HistorialDialog from "@/components/HistorialDialog";
+import { logHistorial } from "@/lib/historial";
+import { useAuth } from "@/hooks/useAuth";
 
 type Siembra = {
   id: string;
@@ -86,6 +89,7 @@ const Index = () => {
     toast.success(`Ensayo ${c} creado`);
     setEnsayoInput("");
     setEnsayoActivo(c);
+    await logHistorial({ ensayo_codigo: c, accion: "insert", tabla: "ensayos", descripcion: `Creó el ensayo ${c}` });
   };
 
   const ingresarEnsayo = async () => {
@@ -174,6 +178,8 @@ const Index = () => {
   const setSavingK = (k: string, v: boolean) => setSaving((p) => ({ ...p, [k]: v }));
 
   const [editTipo, setEditTipo] = useState<null | "prod" | "perd" | "tallos" | "ramos">(null);
+  const [openHistorial, setOpenHistorial] = useState(false);
+  const { signOut, profile, user } = useAuth();
 
   const siembrasMap = useMemo(() => buildSiembrasMap(data as any), [data]);
 
@@ -323,6 +329,7 @@ const Index = () => {
         if (error) throw error;
       }
       toast.success(`${records.length} siembras cargadas`);
+      if (ensayoCodigo) await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "siembras", descripcion: `Cargó inventario con ${records.length} siembras` });
     } catch (e: any) {
       toast.error(e.message ?? "Error");
     } finally {
@@ -421,6 +428,8 @@ const Index = () => {
       });
       if (error) throw error;
       toast.success(`Tratamiento "${nombre}" creado`);
+      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "tratamientos",
+        descripcion: `Creó tratamiento "${nombre}" en cama ${cama} (${p} parcelas)`, datos: { cama, nombre, parcelas: p, plantas_lista: lista } });
       setTNombre(""); setTParcelas(""); setTPlantasList([]);
       loadTratamientos();
     } catch (e: any) {
@@ -432,9 +441,14 @@ const Index = () => {
 
   const eliminarTratamiento = async (id: string) => {
     if (!confirm("¿Eliminar este tratamiento? Los registros ya guardados no se borrarán.")) return;
+    const t = tratamientos.find((x) => x.id === id);
     const { error } = await supabase.from("tratamientos").delete().eq("id", id);
     if (error) toast.error(error.message);
-    else { toast.success("Tratamiento eliminado"); loadTratamientos(); }
+    else {
+      toast.success("Tratamiento eliminado");
+      if (ensayoCodigo && t) await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "tratamientos", registro_id: id, descripcion: `Eliminó tratamiento "${t.nombre}" de cama ${t.cama}` });
+      loadTratamientos();
+    }
   };
 
   // ===== Causa personalizada CRUD =====
@@ -450,6 +464,7 @@ const Index = () => {
       });
       if (error) throw error;
       toast.success(`Causa "${nombre}" creada`);
+      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "causas_personalizadas", descripcion: `Creó causa personalizada "${nombre}"` });
       setNuevaCausaInput((p) => ({ ...p, [groupIdx]: "" }));
       loadCausas();
     } catch (e: any) {
@@ -545,15 +560,17 @@ const Index = () => {
     setSavingK(key, true);
     try {
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
-      const { error } = await supabase.from("productividad").insert({
+      const { data: ins, error } = await supabase.from("productividad").insert({
         cama: g.cama, variedad: g.variedad, parcela: g.parcela,
         tratamiento: g.tratamiento, ramos: r,
         tallos_por_ramo: t, total: r * t,
         ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
-      });
+      }).select("id").maybeSingle();
       if (error) throw error;
       setProdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, ramos: "", tallos: "" } : x));
       toast.success("Dato registrado correctamente");
+      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "productividad", registro_id: ins?.id ?? null,
+        descripcion: `Registró ${r} ramos × ${t} tallos en cama ${g.cama} parcela ${g.parcela} (${g.variedad}) — trat. ${g.tratamiento}` });
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
     } finally {
@@ -572,14 +589,16 @@ const Index = () => {
     try {
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
       const plantasIni = plantasParaCausaIniciales(g.cama, g.tratamiento, g.parcela);
-      const { error } = await supabase.from("perdidas").insert({
+      const { data: ins, error } = await supabase.from("perdidas").insert({
         cama: g.cama, variedad: g.variedad, parcela: g.parcela,
         tratamiento: g.tratamiento, causa: g.causa, tallos: t,
         ensayo_codigo: ensayoCodigo, bloque: bloqueRow, plantas_iniciales: plantasIni,
-      });
+      }).select("id").maybeSingle();
       if (error) throw error;
       setPerdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, tallos: "" } : x));
       toast.success("Pérdida registrada correctamente");
+      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "perdidas", registro_id: ins?.id ?? null,
+        descripcion: `Registró pérdida de ${t} tallos en cama ${g.cama} parcela ${g.parcela} (${g.variedad}) por "${g.causa}"` });
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
     } finally {
@@ -602,16 +621,18 @@ const Index = () => {
     try {
       const numero = siguienteNumeroTallo(g.cama, g.parcela, g.tratamiento);
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
-      const { error } = await supabase.from("tallos").insert({
+      const { data: ins, error } = await supabase.from("tallos").insert({
         cama: g.cama, parcela: g.parcela, tratamiento: g.tratamiento,
         numero, longitud_cm: lon, botones: bot,
         botones_piso2: esPisos ? bot2 : null,
         piso: esPisos ? "pisos" : null,
         ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
-      });
+      }).select("id").maybeSingle();
       if (error) throw error;
       setTallosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, longitud: "", botones: "", puntos2: "" } : x));
       toast.success(`Tallo ${numero} registrado`);
+      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "tallos", registro_id: ins?.id ?? null,
+        descripcion: `Registró tallo #${numero} en cama ${g.cama} parcela ${g.parcela} — long ${lon}cm, ${bot} puntos${esPisos ? ` + ${bot2} piso2` : ""}` });
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
     } finally {
@@ -631,14 +652,16 @@ const Index = () => {
     try {
       const numero = siguienteNumeroRamo(g.cama, g.parcela, g.tratamiento);
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
-      const { error } = await supabase.from("ramos_peso").insert({
+      const { data: ins, error } = await supabase.from("ramos_peso").insert({
         cama: g.cama, parcela: g.parcela, tratamiento: g.tratamiento,
         numero, tallos_por_ramo: tpr, peso_g: peso,
         ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
-      });
+      }).select("id").maybeSingle();
       if (error) throw error;
       setRamosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, tallosPorRamo: "", peso: "" } : x));
       toast.success(`Ramo ${numero} registrado`);
+      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "ramos_peso", registro_id: ins?.id ?? null,
+        descripcion: `Registró ramo #${numero} en cama ${g.cama} parcela ${g.parcela} — ${tpr} tallos, ${peso}g` });
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
     } finally {
@@ -651,30 +674,35 @@ const Index = () => {
     if (!confirm("¿Eliminar TODOS los registros de productividad?")) return;
     const { error } = await supabase.from("productividad").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
+    else await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "productividad", descripcion: "Eliminó TODOS los registros de productividad" });
   };
   const limpiarPerdidas = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de pérdidas?")) return;
     const { error } = await supabase.from("perdidas").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
+    else await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "perdidas", descripcion: "Eliminó TODOS los registros de pérdidas" });
   };
   const limpiarTallos = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de longitud y puntos?")) return;
     const { error } = await supabase.from("tallos").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
+    else await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "tallos", descripcion: "Eliminó TODOS los registros de longitud y puntos" });
   };
   const limpiarRamos = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de peso de ramo?")) return;
     const { error } = await supabase.from("ramos_peso").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
+    else await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "ramos_peso", descripcion: "Eliminó TODOS los registros de peso de ramo" });
   };
   const limpiarTodo = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODAS las siembras de la base de datos?")) return;
     const { error } = await supabase.from("siembras").delete().eq("ensayo_codigo", ensayoCodigo);
-    if (error) toast.error(error.message); else toast.success("Base de datos limpiada");
+    if (error) toast.error(error.message);
+    else { toast.success("Base de datos limpiada"); await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "siembras", descripcion: "Eliminó TODAS las siembras del ensayo" }); }
   };
 
   // Mostrar las secciones de toma cuando hay siembras cargadas
@@ -701,8 +729,17 @@ const Index = () => {
             <span className="text-muted-foreground">Total inventario:</span>
             <span className="text-accent-orange">{data.length.toLocaleString("es")}</span>
             <button onClick={salirEnsayo} className="ml-2 border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background transition-colors">Salir</button>
+            <button onClick={() => setOpenHistorial(true)} className="border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background transition-colors">Historial</button>
           </div>
         )}
+        <div className="flex gap-3 items-center font-mono text-[10px] uppercase ml-auto">
+          {profile?.nombre_completo && <span className="text-muted-foreground">{profile.nombre_completo}</span>}
+          {user && (
+            <button onClick={signOut} className="border-2 border-accent-orange px-3 py-1 text-accent-orange hover:bg-accent-orange hover:text-background transition-colors">
+              Cerrar sesión
+            </button>
+          )}
+        </div>
       </nav>
 
       {!ensayoCodigo ? (
@@ -1468,7 +1505,11 @@ const Index = () => {
           siembras={data}
           causasExtra={causasPers.map((c) => c.nombre)}
           onSaved={() => loadRegistros()}
+          ensayoCodigo={ensayoCodigo}
         />
+      )}
+      {ensayoCodigo && (
+        <HistorialDialog open={openHistorial} onClose={() => setOpenHistorial(false)} ensayoCodigo={ensayoCodigo} />
       )}
     </div>
   );

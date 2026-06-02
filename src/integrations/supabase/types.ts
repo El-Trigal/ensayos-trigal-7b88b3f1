@@ -77,6 +77,45 @@ export type Database = {
         }
         Relationships: []
       }
+      historial: {
+        Row: {
+          accion: string
+          created_at: string
+          datos: Json | null
+          descripcion: string
+          ensayo_codigo: string
+          id: string
+          registro_id: string | null
+          tabla: string
+          user_id: string | null
+          user_nombre: string
+        }
+        Insert: {
+          accion: string
+          created_at?: string
+          datos?: Json | null
+          descripcion: string
+          ensayo_codigo: string
+          id?: string
+          registro_id?: string | null
+          tabla: string
+          user_id?: string | null
+          user_nombre: string
+        }
+        Update: {
+          accion?: string
+          created_at?: string
+          datos?: Json | null
+          descripcion?: string
+          ensayo_codigo?: string
+          id?: string
+          registro_id?: string | null
+          tabla?: string
+          user_id?: string | null
+          user_nombre?: string
+        }
+        Relationships: []
+      }
       perdidas: {
         Row: {
           bloque: number | null
@@ -158,6 +197,33 @@ export type Database = {
           total?: number
           tratamiento?: string
           variedad?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          nombre_completo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          nombre_completo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          nombre_completo?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

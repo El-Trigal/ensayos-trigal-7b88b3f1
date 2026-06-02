@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logHistorial, TablaHistorial } from "@/lib/historial";
 
 type Tipo = "prod" | "perd" | "tallos" | "ramos";
 
 type SiembraLite = { bloque: number; cm: string; nom_flor: string; plantas: number };
 
-const TABLA: Record<Tipo, "productividad" | "perdidas" | "tallos" | "ramos_peso"> = {
+const TABLA: Record<Tipo, TablaHistorial> = {
   prod: "productividad",
   perd: "perdidas",
   tallos: "tallos",
@@ -31,9 +32,10 @@ type Props = {
   siembras: SiembraLite[];
   onSaved: () => void;
   causasExtra?: string[];
+  ensayoCodigo?: string | null;
 };
 
-export default function EditUltimosDialog({ open, onClose, tipo, registros, siembras, onSaved, causasExtra = [] }: Props) {
+export default function EditUltimosDialog({ open, onClose, tipo, registros, siembras, onSaved, causasExtra = [], ensayoCodigo }: Props) {
   const [rows, setRows] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -63,8 +65,9 @@ export default function EditUltimosDialog({ open, onClose, tipo, registros, siem
     if (!window.confirm("¿Eliminar este registro? Esta acción no se puede deshacer.")) return;
     setDeletingId(id);
     try {
-      const { error } = await supabase.from(TABLA[tipo]).delete().eq("id", id);
+      const { error } = await (supabase.from(TABLA[tipo]) as any).delete().eq("id", id);
       if (error) throw error;
+      if (ensayoCodigo) await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: TABLA[tipo], registro_id: id, descripcion: `Eliminó un registro de ${TABLA[tipo]}` });
       setRows((prev) => prev.filter((r) => r.id !== id));
       toast.success("Registro eliminado");
       onSaved();
@@ -109,8 +112,9 @@ export default function EditUltimosDialog({ open, onClose, tipo, registros, siem
           payload.tallos_por_ramo = Number(r.tallos_por_ramo) || 0;
           payload.peso_g = Number(r.peso_g) || 0;
         }
-        const { error } = await supabase.from(TABLA[tipo]).update(payload).eq("id", r.id);
+        const { error } = await (supabase.from(TABLA[tipo]) as any).update(payload).eq("id", r.id);
         if (error) throw error;
+        if (ensayoCodigo) await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "update", tabla: TABLA[tipo], registro_id: r.id, descripcion: `Editó un registro de ${TABLA[tipo]} (cama ${r.cama} parcela ${r.parcela})`, datos: payload });
       }
       toast.success("Cambios guardados");
       onSaved();
