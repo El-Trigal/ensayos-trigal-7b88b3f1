@@ -559,15 +559,17 @@ const Index = () => {
     setSavingK(key, true);
     try {
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
-      const { error } = await supabase.from("productividad").insert({
+      const { data: ins, error } = await supabase.from("productividad").insert({
         cama: g.cama, variedad: g.variedad, parcela: g.parcela,
         tratamiento: g.tratamiento, ramos: r,
         tallos_por_ramo: t, total: r * t,
         ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
-      });
+      }).select("id").maybeSingle();
       if (error) throw error;
       setProdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, ramos: "", tallos: "" } : x));
       toast.success("Dato registrado correctamente");
+      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "productividad", registro_id: ins?.id ?? null,
+        descripcion: `Registró ${r} ramos × ${t} tallos en cama ${g.cama} parcela ${g.parcela} (${g.variedad}) — trat. ${g.tratamiento}` });
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
     } finally {
@@ -586,14 +588,16 @@ const Index = () => {
     try {
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
       const plantasIni = plantasParaCausaIniciales(g.cama, g.tratamiento, g.parcela);
-      const { error } = await supabase.from("perdidas").insert({
+      const { data: ins, error } = await supabase.from("perdidas").insert({
         cama: g.cama, variedad: g.variedad, parcela: g.parcela,
         tratamiento: g.tratamiento, causa: g.causa, tallos: t,
         ensayo_codigo: ensayoCodigo, bloque: bloqueRow, plantas_iniciales: plantasIni,
-      });
+      }).select("id").maybeSingle();
       if (error) throw error;
       setPerdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, tallos: "" } : x));
       toast.success("Pérdida registrada correctamente");
+      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "perdidas", registro_id: ins?.id ?? null,
+        descripcion: `Registró pérdida de ${t} tallos en cama ${g.cama} parcela ${g.parcela} (${g.variedad}) por "${g.causa}"` });
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
     } finally {
@@ -616,16 +620,18 @@ const Index = () => {
     try {
       const numero = siguienteNumeroTallo(g.cama, g.parcela, g.tratamiento);
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
-      const { error } = await supabase.from("tallos").insert({
+      const { data: ins, error } = await supabase.from("tallos").insert({
         cama: g.cama, parcela: g.parcela, tratamiento: g.tratamiento,
         numero, longitud_cm: lon, botones: bot,
         botones_piso2: esPisos ? bot2 : null,
         piso: esPisos ? "pisos" : null,
         ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
-      });
+      }).select("id").maybeSingle();
       if (error) throw error;
       setTallosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, longitud: "", botones: "", puntos2: "" } : x));
       toast.success(`Tallo ${numero} registrado`);
+      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "tallos", registro_id: ins?.id ?? null,
+        descripcion: `Registró tallo #${numero} en cama ${g.cama} parcela ${g.parcela} — long ${lon}cm, ${bot} puntos${esPisos ? ` + ${bot2} piso2` : ""}` });
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
     } finally {
@@ -645,14 +651,16 @@ const Index = () => {
     try {
       const numero = siguienteNumeroRamo(g.cama, g.parcela, g.tratamiento);
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
-      const { error } = await supabase.from("ramos_peso").insert({
+      const { data: ins, error } = await supabase.from("ramos_peso").insert({
         cama: g.cama, parcela: g.parcela, tratamiento: g.tratamiento,
         numero, tallos_por_ramo: tpr, peso_g: peso,
         ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
-      });
+      }).select("id").maybeSingle();
       if (error) throw error;
       setRamosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, tallosPorRamo: "", peso: "" } : x));
       toast.success(`Ramo ${numero} registrado`);
+      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "ramos_peso", registro_id: ins?.id ?? null,
+        descripcion: `Registró ramo #${numero} en cama ${g.cama} parcela ${g.parcela} — ${tpr} tallos, ${peso}g` });
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
     } finally {
