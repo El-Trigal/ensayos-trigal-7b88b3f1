@@ -1,89 +1,91 @@
-# Plan de mejoras
+# Plan: Autenticación + Historial de cambios + Seguridad RLS
 
-## 1. Tratamientos por cama (nuevo modelo)
+## 1. Autenticación (email + contraseña)
 
-**Base de datos** — nueva tabla `tratamientos`:
-- `id`, `ensayo_codigo`, `cama`, `nombre`, `parcelas` (int), `plantas_por_parcela` (int), `created_at`
-- Único por `(ensayo_codigo, cama, nombre)`
-- RLS público (igual que el resto), GRANT a anon/authenticated/service_role
+- Implementar autenticación de Lovable Cloud con **email + contraseña** (sin Google, según el flujo descrito).
+- Crear página `/auth` con dos pestañas: **Iniciar sesión** y **Registrarse**.
+  - Registro pide: nombre completo, email, contraseña.
+  - El nombre se guarda en una tabla `profiles` (creada automáticamente por trigger al registrarse).
+- Auto-confirmar email activado (para no requerir verificación por correo en este flujo de campo).
+- Proteger la página principal (`/`): si no hay sesión → redirigir a `/auth`.
+- El flujo actual de "ingresar código de 5 dígitos del ensayo" se mantiene **después** del login.
+- Agregar botón **"Cerrar sesión"** junto al actual botón **"Salir"** del ensayo.
 
-**UI inventario** (sección "Cama: configuración"):
-- Antes de los inputs actuales (parcelas / plantas por parcela), agregar input **"Tratamiento (nombre)"**
-- Botón **"Añadir tratamiento"** que guarda en la tabla
-- Lista de tratamientos ya creados para esa cama, con botón eliminar
-- Los campos "parcelas" y "plantas por parcela" ahora pertenecen a cada tratamiento (no a la cama global)
+## 2. Tabla `profiles`
 
-## 2. Selectores en secciones de toma de datos
+Campos: `id`, `user_id` (FK a auth.users), `nombre_completo`, `email`, timestamps.
 
-En cada grupo (Productividad, Pérdidas, Longitud, Peso de ramo):
-- **Tratamiento**: pasa de input de texto a `<Select>` con tratamientos de la cama seleccionada (filtrados desde la tabla `tratamientos` por `ensayo_codigo` + `cama`)
-- **Parcela**: el rango de opciones (1..N) se calcula desde `parcelas` del tratamiento seleccionado, no desde el estado global
-- Si la cama no tiene tratamientos, el selector dice "Sin tratamientos para esta cama — créalos en Inventario"
+- Trigger `handle_new_user()` que inserta el profile al registrarse, leyendo `nombre_completo` del `raw_user_meta_data`.
+- RLS: cualquier usuario autenticado puede leer profiles (para mostrar nombres en el historial); solo el dueño puede actualizar el suyo.
 
-## 3. Grupos dinámicos horizontales (máx 4)
+## 3. Tabla `historial` (auditoría)
 
-Reemplazar los 3 grupos fijos por:
-- Estado inicial: **1 grupo** por sección
-- Botón **"+ Crear grupo"** (deshabilitado al llegar a 4) y botón **× eliminar grupo** por tarjeta
-- Layout: contenedor con `flex overflow-x-auto snap-x` para scroll horizontal en móvil; cada grupo es una tarjeta de ancho mínimo (~280px) en lugar de apilarse verticalmente
-- Aplica a las 4 secciones
+Campos:
+- `id`, `created_at`
+- `ensayo_codigo` (text) — para filtrar el historial por ensayo
+- `user_id` (uuid), `user_nombre` (text, denormalizado para no romperse si se borra el perfil)
+- `accion` (text): `insert` | `update` | `delete`
+- `tabla` (text): `productividad` | `perdidas` | `tallos` | `ramos_peso` | `tratamientos` | `siembras` | `causas_personalizadas` | `ensayos`
+- `registro_id` (uuid, nullable)
+- `descripcion` (text) — resumen legible, p.ej. *"Registró 12 ramos en cama C-3 (Variedad X)"*
+- `datos` (jsonb, nullable) — payload de respaldo con los campos clave
 
-## 4. Campo "Piso" en Longitud y puntos
+RLS: solo lectura/inserción para usuarios autenticados.
 
-**Base de datos** — agregar columna `piso` (text, nullable) a `tallos`:
-- Valores: `null` (sin pisos), `"1"`, `"2"`
+## 4. Registro de auditoría desde el frontend
 
-**UI** — en cada grupo de Longitud y puntos, agregar `<Select>` "Piso" antes de "Botones":
-- Opciones: "Sin pisos", "1", "2"
-- Default: "Sin pisos"
-- El valor se guarda con el registro (null si "Sin pisos")
+En lugar de triggers de base de datos (más frágiles ante cambios de esquema), usar un helper `logHistorial({ ensayo_codigo, accion, tabla, registro_id, descripcion, datos })` en `src/lib/historial.ts`. Llamarlo después de cada operación exitosa de:
 
-## 5. Columna "Piso" en Excel de Longitud y puntos
+- Crear/editar/borrar tratamientos, siembras, causas
+- Insertar productividad, pérdidas, tallos, ramos_peso
+- Editar/eliminar desde el diálogo "Editar últimos 3 registros"
 
-En `exportTallos`:
-- Detectar si algún registro exportado tiene `piso != null`
-- Si sí, insertar columna **"Piso"** entre "Longitud del tallo (cm)" y "Número de puntos"
-- Si todos son null, no incluirla
+El `user_id` y `user_nombre` se obtienen de la sesión actual.
 
-## 6. Causas personalizadas por ensayo
+## 5. Vista de Historial
 
-**Base de datos** — nueva tabla `causas_personalizadas`:
-- `id`, `ensayo_codigo`, `nombre`, `created_at`
-- Único por `(ensayo_codigo, nombre)`
-- RLS público, GRANT estándar
+- Botón **"Historial"** junto al botón "Salir" en la barra superior del ensayo.
+- Abre un diálogo (`HistorialDialog.tsx`) con tabla cronológica descendente filtrada por `ensayo_codigo`:
+  - Fecha/hora · Usuario · Acción · Tabla · Descripción
+- Paginación simple (cargar últimos 200, botón "cargar más").
 
-**UI** — al lado del Select de Causa en cada grupo de Pérdidas:
-- Botón **"+ Añadir causa"** que abre un mini-dialog con input + guardar
-- Las causas se combinan: las 15 fijas (`CAUSAS`) + las personalizadas del ensayo activo
-- Al exportar Excel, las causas personalizadas se incluyen como columnas extra al final
+## 6. Endurecimiento de RLS (corrige los hallazgos del escáner)
 
-## 7. Anti-duplicados (estado de guardado)
+Reemplazar todas las políticas `USING (true)` / `WITH CHECK (true)` por:
 
-Para cada handler `añadirX`:
-- Estado `saving: { [groupIndex: number]: boolean }` por sección (o un Set de claves activas)
-- Botón "Añadir" → al click: `setSaving(true)`, disabled, texto cambia a "Guardando…"
-- En el `finally` del try/catch: `setSaving(false)`
-- Mantener toast de éxito/error existente (ya hay)
-- Aplicar también a botones "Añadir tratamiento" y "Añadir causa"
+- **SELECT**: `to authenticated USING (true)` (los datos del ensayo siguen visibles para cualquier usuario autenticado que conozca el código — coherente con el modelo actual).
+- **INSERT / UPDATE / DELETE**: `to authenticated WITH CHECK (auth.uid() IS NOT NULL)` en todas las tablas: `datasets`, `ensayos`, `perdidas`, `productividad`, `ramos_peso`, `siembras`, `tallos`, `tratamientos`, `causas_personalizadas`, `historial`, `profiles`.
+- Quitar el rol `public` de todas las políticas de escritura.
 
-## Detalles técnicos
+Esto cierra los hallazgos #1 y #3 del escáner.
 
-**Archivos afectados:**
-```text
-supabase/migrations/<nuevo>.sql       → tabla tratamientos, tabla causas_personalizadas, columna piso en tallos
-src/pages/Index.tsx                   → toda la lógica nueva (tratamientos, grupos dinámicos, piso, causas, anti-duplicados)
-src/lib/exportRegistros.ts            → columna Piso condicional, columnas de causas personalizadas
-src/components/EditUltimosDialog.tsx  → soporte para editar piso en tallos y para nuevas causas
-```
+> Nota sobre el hallazgo #2 (Realtime): la app actual no usa suscripciones Realtime activas, así que el riesgo es teórico. Si más adelante se usan, agregaremos políticas en `realtime.messages`. Lo marcaré como aceptado por ahora con justificación.
 
-**Compatibilidad retro:**
-- Registros viejos sin tratamiento en la tabla `tratamientos` siguen funcionando porque el valor `tratamiento` está guardado en cada fila de `productividad`/`perdidas`/`tallos`/`ramos_peso`
-- Para usar los nuevos selectores el usuario debe crear tratamientos en Inventario
+## 7. Archivos a crear / modificar
 
-## Preguntas antes de implementar
+**Nuevos:**
+- `supabase/migrations/<timestamp>_auth_historial_rls.sql` — profiles, historial, trigger handle_new_user, GRANTs, RLS nuevas.
+- `src/pages/Auth.tsx` — login/registro.
+- `src/components/HistorialDialog.tsx`.
+- `src/lib/historial.ts` — helper `logHistorial`.
+- `src/hooks/useAuth.tsx` — provider y hook de sesión.
 
-1. **Migración de los inputs viejos**: actualmente "Parcelas" y "Plantas por parcela" son globales por cama (un solo valor). ¿Quieres que esos campos desaparezcan de la UI (reemplazados 100% por la lista de tratamientos), o que se mantengan como "valor por defecto" si no hay tratamientos creados?
+**Modificados:**
+- `src/App.tsx` — rutas `/auth`, protección de `/`.
+- `src/pages/Index.tsx` — botones "Historial" y "Cerrar sesión"; llamadas a `logHistorial` en cada mutación.
+- `src/components/EditUltimosDialog.tsx` — llamadas a `logHistorial` en update/delete.
 
-2. **Causas personalizadas en Excel**: ¿las quieres como columnas adicionales al final (después de "Vegetativo"), o agrupadas en una sola columna "Otras causas"?
+## 8. Configuración de auth
 
-3. **Grupos dinámicos**: cuando se elimina un grupo con datos parcialmente llenos, ¿confirmar antes de eliminar, o eliminar directamente?
+- `auto_confirm_email: true` (campo, sin verificación de email)
+- `disable_signup: false`
+- `password_hibp_enabled: true` (chequeo de contraseñas filtradas)
+- `external_anonymous_users_enabled: false`
+
+## 9. Migración de datos existentes
+
+Los registros previos no tienen historial. No se intenta reconstruir; el historial empieza desde la activación.
+
+---
+
+¿Apruebas este plan para proceder?
