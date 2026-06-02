@@ -329,6 +329,7 @@ const Index = () => {
         if (error) throw error;
       }
       toast.success(`${records.length} siembras cargadas`);
+      if (ensayoCodigo) await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "siembras", descripcion: `Cargó inventario con ${records.length} siembras` });
     } catch (e: any) {
       toast.error(e.message ?? "Error");
     } finally {
