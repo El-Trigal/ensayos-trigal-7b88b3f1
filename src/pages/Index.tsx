@@ -934,21 +934,36 @@ const Index = () => {
               {/* Tratamientos por cama */}
               <div>
                 <div className="font-mono text-xs uppercase font-bold text-lapis mb-3">TRATAMIENTOS DE LA CAMA {cama}</div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                   <div className="md:col-span-2">
                     <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Tratamiento (nombre)</label>
                     <input type="text" value={tNombre} onChange={(e) => setTNombre(e.target.value)}
                       placeholder="Ej: T1" className={inp} />
                   </div>
                   <div>
-                    <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Parcelas</label>
-                    <input type="number" min="0" value={tParcelas} onChange={(e) => setTParcelas(e.target.value)} className={inp} />
-                  </div>
-                  <div>
-                    <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Plantas/parcela</label>
-                    <input type="number" min="0" value={tPlantas} onChange={(e) => setTPlantas(e.target.value)} className={inp} />
+                    <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">N° de parcelas</label>
+                    <input type="number" min="0" max="50" value={tParcelas} onChange={(e) => setTParcelas(e.target.value)} className={inp} />
                   </div>
                 </div>
+                {tPlantasList.length > 0 && (
+                  <div className="mt-4">
+                    <div className="font-mono text-[10px] uppercase text-lapis mb-2">Plantas por cada parcela</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                      {tPlantasList.map((v, idx) => (
+                        <div key={idx}>
+                          <label className="font-mono text-[10px] text-muted-foreground mb-1 block">Parcela {idx + 1}</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={v}
+                            onChange={(e) => setTPlantasList((p) => p.map((x, k) => k === idx ? e.target.value : x))}
+                            className={inp}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <button onClick={añadirTratamiento} disabled={tratSaving}
                   className="mt-3 font-mono text-xs uppercase tracking-widest bg-lapis text-background px-4 py-2 hover:bg-accent-orange transition-colors disabled:opacity-30">
                   {tratSaving ? "Guardando…" : "+ Añadir tratamiento"}
