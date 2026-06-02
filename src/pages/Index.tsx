@@ -794,14 +794,16 @@ const Index = () => {
             {/* Resumen de registros (tablas existentes) */}
             <section className="border-2 border-lapis bg-white">
               <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
-                <span className="font-mono text-xs uppercase font-bold text-lapis">PRODUCTIVIDAD</span>
+                <button onClick={() => toggleSec("regProd")} className="font-mono text-xs uppercase font-bold text-lapis flex items-center gap-2 hover:text-accent-orange">
+                  <span className="inline-block w-3 text-center">{openSec.regProd ? "−" : "+"}</span> PRODUCTIVIDAD
+                </button>
                 <div className="flex items-center gap-3">
                   <button onClick={() => dl.prod("xlsx")} disabled={registros.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30">↓ Excel</button>
                   <button onClick={() => dl.prod("csv")} disabled={registros.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30">↓ CSV</button>
                   {acumulados.length > 0 && <button onClick={limpiarProductividad} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>}
                 </div>
               </div>
-              {acumulados.length === 0 ? <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div> : (
+              {openSec.regProd && (acumulados.length === 0 ? <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div> : (
                 <div className="overflow-x-auto"><table className="w-full font-mono text-xs">
                   <thead className="bg-lapis text-background"><tr>
                     <th className="text-left p-3 uppercase">Cama</th><th className="text-left p-3 uppercase">Variedad</th>
@@ -827,19 +829,21 @@ const Index = () => {
                     return out;
                   })()}</tbody>
                 </table></div>
-              )}
+              ))}
             </section>
 
             <section className="border-2 border-lapis bg-white">
               <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
-                <span className="font-mono text-xs uppercase font-bold text-lapis">PÉRDIDAS</span>
+                <button onClick={() => toggleSec("regPerd")} className="font-mono text-xs uppercase font-bold text-lapis flex items-center gap-2 hover:text-accent-orange">
+                  <span className="inline-block w-3 text-center">{openSec.regPerd ? "−" : "+"}</span> PÉRDIDAS
+                </button>
                 <div className="flex items-center gap-3">
                   <button onClick={() => dl.perd("xlsx")} disabled={perdidas.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30">↓ Excel</button>
                   <button onClick={() => dl.perd("csv")} disabled={perdidas.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30">↓ CSV</button>
                   {acumuladosPerdidas.length > 0 && <button onClick={limpiarPerdidas} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>}
                 </div>
               </div>
-              {acumuladosPerdidas.length === 0 ? <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div> : (
+              {openSec.regPerd && (acumuladosPerdidas.length === 0 ? <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div> : (
                 <div className="overflow-x-auto"><table className="w-full font-mono text-xs">
                   <thead className="bg-lapis text-background"><tr>
                     <th className="text-left p-3 uppercase">Cama</th><th className="text-left p-3 uppercase">Variedad</th>
@@ -865,19 +869,21 @@ const Index = () => {
                     return out;
                   })()}</tbody>
                 </table></div>
-              )}
+              ))}
             </section>
 
             <section className="border-2 border-lapis bg-white">
               <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
-                <span className="font-mono text-xs uppercase font-bold text-lapis">LONGITUD Y PUNTOS</span>
+                <button onClick={() => toggleSec("regTallos")} className="font-mono text-xs uppercase font-bold text-lapis flex items-center gap-2 hover:text-accent-orange">
+                  <span className="inline-block w-3 text-center">{openSec.regTallos ? "−" : "+"}</span> LONGITUD Y PUNTOS
+                </button>
                 <div className="flex items-center gap-3">
                   <button onClick={() => dl.tallos("xlsx")} disabled={tallos.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30">↓ Excel</button>
                   <button onClick={() => dl.tallos("csv")} disabled={tallos.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30">↓ CSV</button>
                   {tallos.length > 0 && <button onClick={limpiarTallos} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>}
                 </div>
               </div>
-              {tallos.length === 0 ? <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div> : (
+              {openSec.regTallos && (tallos.length === 0 ? <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div> : (
                 <div className="overflow-x-auto"><table className="w-full font-mono text-xs">
                   <thead className="bg-lapis text-background"><tr>
                     <th className="text-left p-3 uppercase">Cama</th><th className="text-left p-3 uppercase">Parcela</th>
@@ -911,19 +917,21 @@ const Index = () => {
                     return out;
                   })()}</tbody>
                 </table></div>
-              )}
+              ))}
             </section>
 
             <section className="border-2 border-lapis bg-white">
               <div className="border-b-2 border-lapis p-4 flex justify-between items-center">
-                <span className="font-mono text-xs uppercase font-bold text-lapis">PESO DE RAMO</span>
+                <button onClick={() => toggleSec("regRamos")} className="font-mono text-xs uppercase font-bold text-lapis flex items-center gap-2 hover:text-accent-orange">
+                  <span className="inline-block w-3 text-center">{openSec.regRamos ? "−" : "+"}</span> PESO DE RAMO
+                </button>
                 <div className="flex items-center gap-3">
                   <button onClick={() => dl.ramos("xlsx")} disabled={ramosPeso.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30">↓ Excel</button>
                   <button onClick={() => dl.ramos("csv")} disabled={ramosPeso.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30">↓ CSV</button>
                   {ramosPeso.length > 0 && <button onClick={limpiarRamos} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>}
                 </div>
               </div>
-              {ramosPeso.length === 0 ? <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div> : (
+              {openSec.regRamos && (ramosPeso.length === 0 ? <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div> : (
                 <div className="overflow-x-auto"><table className="w-full font-mono text-xs">
                   <thead className="bg-lapis text-background"><tr>
                     <th className="text-left p-3 uppercase">Cama</th><th className="text-left p-3 uppercase">Parcela</th>
@@ -956,7 +964,7 @@ const Index = () => {
                     return out;
                   })()}</tbody>
                 </table></div>
-              )}
+              ))}
             </section>
           </>
         ) : vista === "inventario" ? (
