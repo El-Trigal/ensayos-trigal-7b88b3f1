@@ -28,6 +28,7 @@ type Tratamiento = {
   nombre: string;
   parcelas: number;
   plantas_por_parcela: number;
+  plantas_lista: number[];
 };
 
 type CausaPersonalizada = { id: string; nombre: string };
