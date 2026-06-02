@@ -129,8 +129,19 @@ const Index = () => {
   // Inputs para crear tratamiento (en sección de cama)
   const [tNombre, setTNombre] = useState("");
   const [tParcelas, setTParcelas] = useState("");
-  const [tPlantas, setTPlantas] = useState("");
+  const [tPlantasList, setTPlantasList] = useState<string[]>([]);
   const [tratSaving, setTratSaving] = useState(false);
+
+  // Ajusta el tamaño del array de plantas/parcela cuando cambia el número de parcelas
+  useEffect(() => {
+    const n = Math.max(0, Math.min(parseInt(tParcelas) || 0, 50));
+    setTPlantasList((prev) => {
+      const arr = [...prev];
+      while (arr.length < n) arr.push("");
+      arr.length = n;
+      return arr;
+    });
+  }, [tParcelas]);
 
   // Inputs para añadir causa personalizada (por grupo)
   const [nuevaCausaInput, setNuevaCausaInput] = useState<Record<number, string>>({});
