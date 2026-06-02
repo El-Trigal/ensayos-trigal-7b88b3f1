@@ -1505,6 +1505,7 @@ const Index = () => {
           siembras={data}
           causasExtra={causasPers.map((c) => c.nombre)}
           onSaved={() => loadRegistros()}
+          ensayoCodigo={ensayoCodigo}
         />
       )}
       {ensayoCodigo && (
