@@ -52,6 +52,13 @@ const parseExcelDate = (v: any): string | null => {
 
 const MAX_GRUPOS = 4;
 
+const dayOf = (iso: string) => (iso || "").slice(0, 10);
+const fmtDay = (d: string) => {
+  if (!d) return "Sin fecha";
+  const [y, m, dd] = d.split("-");
+  return `${dd}/${m}/${y}`;
+};
+
 const Index = () => {
   // ===== Ensayo activo =====
   const [ensayoCodigo, setEnsayoCodigo] = useState<string | null>(() => {
@@ -460,28 +467,30 @@ const Index = () => {
 
   // ===== Acumulados (sin cambios) =====
   const acumulados = useMemo(() => {
-    const m = new Map<string, { cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; n: number }>();
+    const m = new Map<string, { fecha: string; cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; n: number }>();
     registros.forEach((r) => {
-      const key = `${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}`;
-      const cur = m.get(key) ?? { cama: r.cama, variedad: r.variedad, parcela: r.parcela, tratamiento: r.tratamiento, ramos: 0, tallos: 0, total: 0, n: 0 };
+      const fecha = (r.fecha || "").slice(0, 10);
+      const key = `${fecha}||${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}`;
+      const cur = m.get(key) ?? { fecha, cama: r.cama, variedad: r.variedad, parcela: r.parcela, tratamiento: r.tratamiento, ramos: 0, tallos: 0, total: 0, n: 0 };
       cur.ramos += r.ramos; cur.tallos += r.tallos; cur.total += r.total; cur.n += 1;
       m.set(key, cur);
     });
     return Array.from(m.values()).sort((a, b) =>
-      a.cama.localeCompare(b.cama) || a.variedad.localeCompare(b.variedad) || Number(a.parcela) - Number(b.parcela)
+      b.fecha.localeCompare(a.fecha) || a.cama.localeCompare(b.cama) || a.variedad.localeCompare(b.variedad) || Number(a.parcela) - Number(b.parcela)
     );
   }, [registros]);
 
   const acumuladosPerdidas = useMemo(() => {
-    const m = new Map<string, { cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; n: number }>();
+    const m = new Map<string, { fecha: string; cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; n: number }>();
     perdidas.forEach((r) => {
-      const key = `${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}||${r.causa}`;
-      const cur = m.get(key) ?? { cama: r.cama, variedad: r.variedad, parcela: r.parcela, tratamiento: r.tratamiento, causa: r.causa, tallos: 0, n: 0 };
+      const fecha = (r.fecha || "").slice(0, 10);
+      const key = `${fecha}||${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}||${r.causa}`;
+      const cur = m.get(key) ?? { fecha, cama: r.cama, variedad: r.variedad, parcela: r.parcela, tratamiento: r.tratamiento, causa: r.causa, tallos: 0, n: 0 };
       cur.tallos += r.tallos; cur.n += 1;
       m.set(key, cur);
     });
     return Array.from(m.values()).sort((a, b) =>
-      a.cama.localeCompare(b.cama) || a.variedad.localeCompare(b.variedad) || Number(a.parcela) - Number(b.parcela) || a.causa.localeCompare(b.causa)
+      b.fecha.localeCompare(a.fecha) || a.cama.localeCompare(b.cama) || a.variedad.localeCompare(b.variedad) || Number(a.parcela) - Number(b.parcela) || a.causa.localeCompare(b.causa)
     );
   }, [perdidas]);
 
@@ -762,13 +771,24 @@ const Index = () => {
                     <th className="text-left p-3 uppercase">Parcela</th><th className="text-left p-3 uppercase">Tratamiento</th>
                     <th className="text-right p-3 uppercase">Registros</th><th className="text-right p-3 uppercase">Ramos</th><th className="text-right p-3 uppercase">Total tallos</th>
                   </tr></thead>
-                  <tbody>{acumulados.map((a) => (
-                    <tr key={`${a.cama}-${a.variedad}-${a.parcela}-${a.tratamiento}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
-                      <td className="p-3 font-bold text-lapis">{a.cama}</td><td className="p-3 text-lapis">{a.variedad}</td>
-                      <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td><td className="p-3 text-lapis">{a.tratamiento}</td>
-                      <td className="p-3 text-right">{a.n}</td><td className="p-3 text-right">{a.ramos.toLocaleString("es")}</td>
-                      <td className="p-3 text-right text-accent-orange font-bold">{a.total.toLocaleString("es")}</td>
-                    </tr>))}</tbody>
+                  <tbody>{(() => {
+                    const out: JSX.Element[] = []; let last = "";
+                    acumulados.forEach((a) => {
+                      if (a.fecha !== last) {
+                        out.push(<tr key={`day-${a.fecha}`} className="bg-lapis/10"><td colSpan={7} className="p-2 font-bold text-lapis uppercase">📅 {fmtDay(a.fecha)}</td></tr>);
+                        last = a.fecha;
+                      }
+                      out.push(
+                        <tr key={`${a.fecha}-${a.cama}-${a.variedad}-${a.parcela}-${a.tratamiento}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{a.cama}</td><td className="p-3 text-lapis">{a.variedad}</td>
+                          <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td><td className="p-3 text-lapis">{a.tratamiento}</td>
+                          <td className="p-3 text-right">{a.n}</td><td className="p-3 text-right">{a.ramos.toLocaleString("es")}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">{a.total.toLocaleString("es")}</td>
+                        </tr>
+                      );
+                    });
+                    return out;
+                  })()}</tbody>
                 </table></div>
               )}
             </section>
@@ -789,13 +809,24 @@ const Index = () => {
                     <th className="text-left p-3 uppercase">Parcela</th><th className="text-left p-3 uppercase">Tratamiento</th>
                     <th className="text-left p-3 uppercase">Causa</th><th className="text-right p-3 uppercase">Registros</th><th className="text-right p-3 uppercase">Total tallos</th>
                   </tr></thead>
-                  <tbody>{acumuladosPerdidas.map((a) => (
-                    <tr key={`${a.cama}-${a.variedad}-${a.parcela}-${a.tratamiento}-${a.causa}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
-                      <td className="p-3 font-bold text-lapis">{a.cama}</td><td className="p-3 text-lapis">{a.variedad}</td>
-                      <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td><td className="p-3 text-lapis">{a.tratamiento}</td>
-                      <td className="p-3 text-lapis">{a.causa}</td><td className="p-3 text-right">{a.n}</td>
-                      <td className="p-3 text-right text-accent-orange font-bold">{a.tallos.toLocaleString("es")}</td>
-                    </tr>))}</tbody>
+                  <tbody>{(() => {
+                    const out: JSX.Element[] = []; let last = "";
+                    acumuladosPerdidas.forEach((a) => {
+                      if (a.fecha !== last) {
+                        out.push(<tr key={`day-${a.fecha}`} className="bg-lapis/10"><td colSpan={7} className="p-2 font-bold text-lapis uppercase">📅 {fmtDay(a.fecha)}</td></tr>);
+                        last = a.fecha;
+                      }
+                      out.push(
+                        <tr key={`${a.fecha}-${a.cama}-${a.variedad}-${a.parcela}-${a.tratamiento}-${a.causa}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{a.cama}</td><td className="p-3 text-lapis">{a.variedad}</td>
+                          <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td><td className="p-3 text-lapis">{a.tratamiento}</td>
+                          <td className="p-3 text-lapis">{a.causa}</td><td className="p-3 text-right">{a.n}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">{a.tallos.toLocaleString("es")}</td>
+                        </tr>
+                      );
+                    });
+                    return out;
+                  })()}</tbody>
                 </table></div>
               )}
             </section>
@@ -816,18 +847,32 @@ const Index = () => {
                     <th className="text-left p-3 uppercase">Tratamiento</th><th className="text-right p-3 uppercase">Tallo #</th>
                     <th className="text-right p-3 uppercase">Longitud (cm)</th><th className="text-right p-3 uppercase">Puntos</th><th className="text-right p-3 uppercase">Piso 2</th>
                   </tr></thead>
-                  <tbody>{[...tallos].sort((a, b) =>
-                    a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) ||
-                    a.tratamiento.localeCompare(b.tratamiento) || a.numero - b.numero
-                  ).map((t) => (
-                    <tr key={t.id} className="border-b border-lapis/10 hover:bg-accent-orange/10">
-                      <td className="p-3 font-bold text-lapis">{t.cama}</td><td className="p-3 font-bold text-lapis">Parcela {t.parcela}</td>
-                      <td className="p-3 text-lapis">{t.tratamiento}</td>
-                      <td className="p-3 text-right text-accent-orange font-bold">Tallo {t.numero}</td>
-                      <td className="p-3 text-right">{t.longitud_cm}</td>
-                      <td className="p-3 text-right">{t.botones}</td>
-                      <td className="p-3 text-right">{t.botones_piso2 ?? "—"}</td>
-                    </tr>))}</tbody>
+                  <tbody>{(() => {
+                    const sorted = [...tallos].sort((a, b) =>
+                      dayOf(b.fecha).localeCompare(dayOf(a.fecha)) ||
+                      a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) ||
+                      a.tratamiento.localeCompare(b.tratamiento) || a.numero - b.numero
+                    );
+                    const out: JSX.Element[] = []; let last = "";
+                    sorted.forEach((t) => {
+                      const d = dayOf(t.fecha);
+                      if (d !== last) {
+                        out.push(<tr key={`day-${d}`} className="bg-lapis/10"><td colSpan={7} className="p-2 font-bold text-lapis uppercase">📅 {fmtDay(d)}</td></tr>);
+                        last = d;
+                      }
+                      out.push(
+                        <tr key={t.id} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{t.cama}</td><td className="p-3 font-bold text-lapis">Parcela {t.parcela}</td>
+                          <td className="p-3 text-lapis">{t.tratamiento}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">Tallo {t.numero}</td>
+                          <td className="p-3 text-right">{t.longitud_cm}</td>
+                          <td className="p-3 text-right">{t.botones}</td>
+                          <td className="p-3 text-right">{t.botones_piso2 ?? "—"}</td>
+                        </tr>
+                      );
+                    });
+                    return out;
+                  })()}</tbody>
                 </table></div>
               )}
             </section>
@@ -848,17 +893,31 @@ const Index = () => {
                     <th className="text-left p-3 uppercase">Tratamiento</th><th className="text-right p-3 uppercase">Ramo #</th>
                     <th className="text-right p-3 uppercase">Tallos/ramo</th><th className="text-right p-3 uppercase">Peso (g)</th><th className="text-right p-3 uppercase">Peso/tallo (g)</th>
                   </tr></thead>
-                  <tbody>{[...ramosPeso].sort((a, b) =>
-                    a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) ||
-                    a.tratamiento.localeCompare(b.tratamiento) || a.numero - b.numero
-                  ).map((r) => (
-                    <tr key={r.id} className="border-b border-lapis/10 hover:bg-accent-orange/10">
-                      <td className="p-3 font-bold text-lapis">{r.cama}</td><td className="p-3 font-bold text-lapis">Parcela {r.parcela}</td>
-                      <td className="p-3 text-lapis">{r.tratamiento}</td>
-                      <td className="p-3 text-right text-accent-orange font-bold">Ramo {r.numero}</td>
-                      <td className="p-3 text-right">{r.tallos_por_ramo}</td><td className="p-3 text-right">{r.peso_g}</td>
-                      <td className="p-3 text-right text-accent-orange font-bold">{r.tallos_por_ramo > 0 ? (r.peso_g / r.tallos_por_ramo).toFixed(2) : "—"}</td>
-                    </tr>))}</tbody>
+                  <tbody>{(() => {
+                    const sorted = [...ramosPeso].sort((a, b) =>
+                      dayOf(b.fecha).localeCompare(dayOf(a.fecha)) ||
+                      a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) ||
+                      a.tratamiento.localeCompare(b.tratamiento) || a.numero - b.numero
+                    );
+                    const out: JSX.Element[] = []; let last = "";
+                    sorted.forEach((r) => {
+                      const d = dayOf(r.fecha);
+                      if (d !== last) {
+                        out.push(<tr key={`day-${d}`} className="bg-lapis/10"><td colSpan={7} className="p-2 font-bold text-lapis uppercase">📅 {fmtDay(d)}</td></tr>);
+                        last = d;
+                      }
+                      out.push(
+                        <tr key={r.id} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{r.cama}</td><td className="p-3 font-bold text-lapis">Parcela {r.parcela}</td>
+                          <td className="p-3 text-lapis">{r.tratamiento}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">Ramo {r.numero}</td>
+                          <td className="p-3 text-right">{r.tallos_por_ramo}</td><td className="p-3 text-right">{r.peso_g}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">{r.tallos_por_ramo > 0 ? (r.peso_g / r.tallos_por_ramo).toFixed(2) : "—"}</td>
+                        </tr>
+                      );
+                    });
+                    return out;
+                  })()}</tbody>
                 </table></div>
               )}
             </section>
