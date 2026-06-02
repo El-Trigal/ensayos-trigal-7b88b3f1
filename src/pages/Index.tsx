@@ -203,6 +203,7 @@ const Index = () => {
     if (error) { toast.error(error.message); return; }
     setTratamientos((data ?? []).map((r: any) => ({
       id: r.id, cama: r.cama, nombre: r.nombre, parcelas: r.parcelas, plantas_por_parcela: r.plantas_por_parcela,
+      plantas_lista: Array.isArray(r.plantas_lista) ? r.plantas_lista.map((x: any) => Number(x) || 0) : [],
     })));
   };
 
