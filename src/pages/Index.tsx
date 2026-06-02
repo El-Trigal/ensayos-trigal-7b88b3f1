@@ -998,42 +998,6 @@ const Index = () => {
                 )}
               </div>
 
-              {/* Globales (fallback) */}
-              <div className="border-t-2 border-lapis/30 pt-6">
-                <div className="font-mono text-[10px] uppercase text-muted-foreground mb-3">
-                  Valores generales (usados si una toma de datos no tiene tratamiento)
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">PARCELAS</label>
-                    <input type="number" min="0" value={parcelas} onChange={(e) => setParcelas(e.target.value)}
-                      placeholder="N° de parcelas" className={inp} />
-                  </div>
-                  <div>
-                    <label className="font-mono text-xs uppercase tracking-widest text-lapis mb-2 block">PLANTAS POR PARCELA</label>
-                    <input type="number" min="0" value={plantasPorParcela} onChange={(e) => setPlantasPorParcela(e.target.value)}
-                      placeholder="Plantas / parcela" className={inp} />
-                  </div>
-                </div>
-                {(nParcelas > 0 && nPlantasParc > 0) && (
-                  <div className="mt-4 grid grid-cols-3 border-2 border-lapis bg-white">
-                    <div className="p-6 border-r-2 border-lapis">
-                      <span className="font-mono text-xs uppercase text-muted-foreground">TOTAL CAMA</span>
-                      <div className="mt-2 text-3xl font-extrabold tracking-tighter text-lapis">{totalPlantas.toLocaleString("es")}</div>
-                    </div>
-                    <div className="p-6 border-r-2 border-lapis">
-                      <span className="font-mono text-xs uppercase text-muted-foreground">EXPERIMENTO</span>
-                      <div className="mt-2 text-3xl font-extrabold tracking-tighter text-lapis">{plantasExperimento.toLocaleString("es")}</div>
-                      <span className="font-mono text-[10px] text-muted-foreground">{nParcelas} × {nPlantasParc}</span>
-                    </div>
-                    <div className="p-6 bg-accent-orange/10">
-                      <span className="font-mono text-xs uppercase text-muted-foreground">EFECTO BORDE</span>
-                      <div className="mt-2 text-3xl font-extrabold tracking-tighter text-accent-orange">{efectoBorde.toLocaleString("es")}</div>
-                      <span className="font-mono text-[10px] text-muted-foreground">{totalPlantas > 0 ? ((efectoBorde / totalPlantas) * 100).toFixed(1) : 0}% del total</span>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           )}
         </section>
