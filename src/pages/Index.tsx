@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   buildSiembrasMap,
   exportProductividad,
+  exportProductividadDetallado,
   exportPerdidas,
   exportTallos,
   exportRamos,
