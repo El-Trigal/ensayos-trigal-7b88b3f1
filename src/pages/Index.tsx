@@ -390,11 +390,16 @@ const Index = () => {
     if (!ensayoCodigo || !cama) return;
     const nombre = tNombre.trim();
     const p = parseInt(tParcelas) || 0;
-    const pp = parseInt(tPlantas) || 0;
-    if (!nombre || p <= 0 || pp <= 0) {
-      toast.error("Completa nombre, parcelas y plantas por parcela");
+    if (!nombre || p <= 0) {
+      toast.error("Completa nombre y número de parcelas");
       return;
     }
+    const lista = tPlantasList.slice(0, p).map((v) => parseInt(v) || 0);
+    if (lista.length !== p || lista.some((n) => n <= 0)) {
+      toast.error("Ingresa el número de plantas de cada parcela");
+      return;
+    }
+    const pp = Math.round(lista.reduce((a, b) => a + b, 0) / p);
     if (findTratamiento(cama, nombre)) {
       toast.error("Ya existe un tratamiento con ese nombre en esta cama");
       return;
@@ -403,10 +408,11 @@ const Index = () => {
     try {
       const { error } = await supabase.from("tratamientos").insert({
         ensayo_codigo: ensayoCodigo, cama, nombre, parcelas: p, plantas_por_parcela: pp,
+        plantas_lista: lista as any,
       });
       if (error) throw error;
       toast.success(`Tratamiento "${nombre}" creado`);
-      setTNombre(""); setTParcelas(""); setTPlantas("");
+      setTNombre(""); setTParcelas(""); setTPlantasList([]);
       loadTratamientos();
     } catch (e: any) {
       toast.error(e.message ?? "Error");
