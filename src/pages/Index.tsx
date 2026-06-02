@@ -557,6 +557,7 @@ const Index = () => {
     const g = prodGroups[i];
     const r = parseInt(g.ramos) || 0;
     const t = parseInt(g.tallos) || 0;
+    const extra = parseInt(g.extra) || 0;
     if (!g.cama || !g.variedad || !g.parcela || !g.tratamiento || r <= 0 || t <= 0) return;
     setSavingK(key, true);
     try {
@@ -564,14 +565,14 @@ const Index = () => {
       const { data: ins, error } = await supabase.from("productividad").insert({
         cama: g.cama, variedad: g.variedad, parcela: g.parcela,
         tratamiento: g.tratamiento, ramos: r,
-        tallos_por_ramo: t, total: r * t,
+        tallos_por_ramo: t, tallos_de_mas: extra, total: r * t + extra,
         ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
       }).select("id").maybeSingle();
       if (error) throw error;
-      setProdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, ramos: "", tallos: "" } : x));
+      setProdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, ramos: "", tallos: "", extra: "" } : x));
       toast.success("Dato registrado correctamente");
       await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "productividad", registro_id: ins?.id ?? null,
-        descripcion: `Registró ${r} ramos × ${t} tallos en cama ${g.cama} parcela ${g.parcela} (${g.variedad}) — trat. ${g.tratamiento}` });
+        descripcion: `Registró ${r} ramos × ${t} tallos (+${extra} de más) en cama ${g.cama} parcela ${g.parcela} (${g.variedad}) — trat. ${g.tratamiento}` });
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
     } finally {
