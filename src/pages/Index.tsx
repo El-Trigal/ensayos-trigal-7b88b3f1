@@ -120,7 +120,7 @@ const Index = () => {
   const [parcelas, setParcelas] = useState<string>("");
   const [plantasPorParcela, setPlantasPorParcela] = useState<string>("");
 
-  type Registro = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; fecha: string; bloque: number | null };
+  type Registro = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; tallos_de_mas: number; total: number; fecha: string; bloque: number | null };
   const [registros, setRegistros] = useState<Registro[]>([]);
 
   const CAUSAS_FIJAS = ["Botón corona", "Botrytis", "Compuesto", "Daño mecanico", "Delgados", "Espiga corta", "Flor Abierta", "Malformación", "Mezcla", "Mutación", "Pocos puntos", "Secadera", "Tallos cortos", "Torcidos", "Vegetativo"] as const;
@@ -159,11 +159,11 @@ const Index = () => {
   const [causaSaving, setCausaSaving] = useState(false);
 
   // ===== Grupos dinámicos (1..4) =====
-  type ProdGroup = { cama: string; variedad: string; parcela: string; tratamiento: string; ramos: string; tallos: string };
+  type ProdGroup = { cama: string; variedad: string; parcela: string; tratamiento: string; ramos: string; tallos: string; extra: string };
   type PerdGroup = { cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: string };
   type TallosGroup = { cama: string; parcela: string; tratamiento: string; longitud: string; botones: string; puntos2: string; piso: string };
   type RamosGroup = { cama: string; parcela: string; tratamiento: string; tallosPorRamo: string; peso: string };
-  const emptyProd = (): ProdGroup => ({ cama: "", variedad: "", parcela: "", tratamiento: "", ramos: "", tallos: "" });
+  const emptyProd = (): ProdGroup => ({ cama: "", variedad: "", parcela: "", tratamiento: "", ramos: "", tallos: "", extra: "" });
   const emptyPerd = (): PerdGroup => ({ cama: "", variedad: "", parcela: "", tratamiento: "", causa: "", tallos: "" });
   const emptyTallos = (): TallosGroup => ({ cama: "", parcela: "", tratamiento: "", longitud: "", botones: "", puntos2: "", piso: "sin" });
   const emptyRamos = (): RamosGroup => ({ cama: "", parcela: "", tratamiento: "", tallosPorRamo: "", peso: "" });
