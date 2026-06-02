@@ -367,8 +367,10 @@ const Index = () => {
     return nParcelas;
   };
 
-  const plantasParaCausaIniciales = (cm: string, tratNombre: string): number | null => {
+  const plantasParaCausaIniciales = (cm: string, tratNombre: string, parcela: string): number | null => {
     const t = findTratamiento(cm, tratNombre);
+    const idx = (parseInt(parcela) || 0) - 1;
+    if (t && idx >= 0 && t.plantas_lista[idx] > 0) return t.plantas_lista[idx];
     if (t && t.plantas_por_parcela > 0) return t.plantas_por_parcela;
     return nPlantasParc > 0 ? nPlantasParc : null;
   };
