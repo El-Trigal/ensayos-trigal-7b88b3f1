@@ -729,8 +729,17 @@ const Index = () => {
             <span className="text-muted-foreground">Total inventario:</span>
             <span className="text-accent-orange">{data.length.toLocaleString("es")}</span>
             <button onClick={salirEnsayo} className="ml-2 border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background transition-colors">Salir</button>
+            <button onClick={() => setOpenHistorial(true)} className="border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background transition-colors">Historial</button>
           </div>
         )}
+        <div className="flex gap-3 items-center font-mono text-[10px] uppercase ml-auto">
+          {profile?.nombre_completo && <span className="text-muted-foreground">{profile.nombre_completo}</span>}
+          {user && (
+            <button onClick={signOut} className="border-2 border-accent-orange px-3 py-1 text-accent-orange hover:bg-accent-orange hover:text-background transition-colors">
+              Cerrar sesión
+            </button>
+          )}
+        </div>
       </nav>
 
       {!ensayoCodigo ? (
