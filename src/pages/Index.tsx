@@ -893,16 +893,31 @@ const Index = () => {
                     <th className="text-left p-3 uppercase">Tratamiento</th><th className="text-right p-3 uppercase">Ramo #</th>
                     <th className="text-right p-3 uppercase">Tallos/ramo</th><th className="text-right p-3 uppercase">Peso (g)</th><th className="text-right p-3 uppercase">Peso/tallo (g)</th>
                   </tr></thead>
-                  <tbody>{[...ramosPeso].sort((a, b) =>
-                    a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) ||
-                    a.tratamiento.localeCompare(b.tratamiento) || a.numero - b.numero
-                  ).map((r) => (
-                    <tr key={r.id} className="border-b border-lapis/10 hover:bg-accent-orange/10">
-                      <td className="p-3 font-bold text-lapis">{r.cama}</td><td className="p-3 font-bold text-lapis">Parcela {r.parcela}</td>
-                      <td className="p-3 text-lapis">{r.tratamiento}</td>
-                      <td className="p-3 text-right text-accent-orange font-bold">Ramo {r.numero}</td>
-                      <td className="p-3 text-right">{r.tallos_por_ramo}</td><td className="p-3 text-right">{r.peso_g}</td>
-                      <td className="p-3 text-right text-accent-orange font-bold">{r.tallos_por_ramo > 0 ? (r.peso_g / r.tallos_por_ramo).toFixed(2) : "—"}</td>
+                  <tbody>{(() => {
+                    const sorted = [...ramosPeso].sort((a, b) =>
+                      dayOf(b.fecha).localeCompare(dayOf(a.fecha)) ||
+                      a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) ||
+                      a.tratamiento.localeCompare(b.tratamiento) || a.numero - b.numero
+                    );
+                    const out: JSX.Element[] = []; let last = "";
+                    sorted.forEach((r) => {
+                      const d = dayOf(r.fecha);
+                      if (d !== last) {
+                        out.push(<tr key={`day-${d}`} className="bg-lapis/10"><td colSpan={7} className="p-2 font-bold text-lapis uppercase">📅 {fmtDay(d)}</td></tr>);
+                        last = d;
+                      }
+                      out.push(
+                        <tr key={r.id} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{r.cama}</td><td className="p-3 font-bold text-lapis">Parcela {r.parcela}</td>
+                          <td className="p-3 text-lapis">{r.tratamiento}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">Ramo {r.numero}</td>
+                          <td className="p-3 text-right">{r.tallos_por_ramo}</td><td className="p-3 text-right">{r.peso_g}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">{r.tallos_por_ramo > 0 ? (r.peso_g / r.tallos_por_ramo).toFixed(2) : "—"}</td>
+                        </tr>
+                      );
+                    });
+                    return out;
+                  })()}</tbody>
                     </tr>))}</tbody>
                 </table></div>
               )}
