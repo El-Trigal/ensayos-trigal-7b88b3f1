@@ -10,6 +10,9 @@ import {
   exportRamos,
 } from "@/lib/exportRegistros";
 import EditUltimosDialog from "@/components/EditUltimosDialog";
+import HistorialDialog from "@/components/HistorialDialog";
+import { logHistorial } from "@/lib/historial";
+import { useAuth } from "@/hooks/useAuth";
 
 type Siembra = {
   id: string;
