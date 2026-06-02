@@ -295,6 +295,7 @@ export type Database = {
           id: string
           nombre: string
           parcelas: number
+          plantas_lista: Json | null
           plantas_por_parcela: number
         }
         Insert: {
@@ -304,6 +305,7 @@ export type Database = {
           id?: string
           nombre: string
           parcelas?: number
+          plantas_lista?: Json | null
           plantas_por_parcela?: number
         }
         Update: {
@@ -313,6 +315,7 @@ export type Database = {
           id?: string
           nombre?: string
           parcelas?: number
+          plantas_lista?: Json | null
           plantas_por_parcela?: number
         }
         Relationships: []

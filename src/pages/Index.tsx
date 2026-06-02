@@ -28,6 +28,7 @@ type Tratamiento = {
   nombre: string;
   parcelas: number;
   plantas_por_parcela: number;
+  plantas_lista: number[];
 };
 
 type CausaPersonalizada = { id: string; nombre: string };
@@ -128,8 +129,19 @@ const Index = () => {
   // Inputs para crear tratamiento (en sección de cama)
   const [tNombre, setTNombre] = useState("");
   const [tParcelas, setTParcelas] = useState("");
-  const [tPlantas, setTPlantas] = useState("");
+  const [tPlantasList, setTPlantasList] = useState<string[]>([]);
   const [tratSaving, setTratSaving] = useState(false);
+
+  // Ajusta el tamaño del array de plantas/parcela cuando cambia el número de parcelas
+  useEffect(() => {
+    const n = Math.max(0, Math.min(parseInt(tParcelas) || 0, 50));
+    setTPlantasList((prev) => {
+      const arr = [...prev];
+      while (arr.length < n) arr.push("");
+      arr.length = n;
+      return arr;
+    });
+  }, [tParcelas]);
 
   // Inputs para añadir causa personalizada (por grupo)
   const [nuevaCausaInput, setNuevaCausaInput] = useState<Record<number, string>>({});
@@ -202,6 +214,7 @@ const Index = () => {
     if (error) { toast.error(error.message); return; }
     setTratamientos((data ?? []).map((r: any) => ({
       id: r.id, cama: r.cama, nombre: r.nombre, parcelas: r.parcelas, plantas_por_parcela: r.plantas_por_parcela,
+      plantas_lista: Array.isArray(r.plantas_lista) ? r.plantas_lista.map((x: any) => Number(x) || 0) : [],
     })));
   };
 
@@ -354,8 +367,10 @@ const Index = () => {
     return nParcelas;
   };
 
-  const plantasParaCausaIniciales = (cm: string, tratNombre: string): number | null => {
+  const plantasParaCausaIniciales = (cm: string, tratNombre: string, parcela: string): number | null => {
     const t = findTratamiento(cm, tratNombre);
+    const idx = (parseInt(parcela) || 0) - 1;
+    if (t && idx >= 0 && t.plantas_lista[idx] > 0) return t.plantas_lista[idx];
     if (t && t.plantas_por_parcela > 0) return t.plantas_por_parcela;
     return nPlantasParc > 0 ? nPlantasParc : null;
   };
@@ -377,11 +392,16 @@ const Index = () => {
     if (!ensayoCodigo || !cama) return;
     const nombre = tNombre.trim();
     const p = parseInt(tParcelas) || 0;
-    const pp = parseInt(tPlantas) || 0;
-    if (!nombre || p <= 0 || pp <= 0) {
-      toast.error("Completa nombre, parcelas y plantas por parcela");
+    if (!nombre || p <= 0) {
+      toast.error("Completa nombre y número de parcelas");
       return;
     }
+    const lista = tPlantasList.slice(0, p).map((v) => parseInt(v) || 0);
+    if (lista.length !== p || lista.some((n) => n <= 0)) {
+      toast.error("Ingresa el número de plantas de cada parcela");
+      return;
+    }
+    const pp = Math.round(lista.reduce((a, b) => a + b, 0) / p);
     if (findTratamiento(cama, nombre)) {
       toast.error("Ya existe un tratamiento con ese nombre en esta cama");
       return;
@@ -390,10 +410,11 @@ const Index = () => {
     try {
       const { error } = await supabase.from("tratamientos").insert({
         ensayo_codigo: ensayoCodigo, cama, nombre, parcelas: p, plantas_por_parcela: pp,
+        plantas_lista: lista as any,
       });
       if (error) throw error;
       toast.success(`Tratamiento "${nombre}" creado`);
-      setTNombre(""); setTParcelas(""); setTPlantas("");
+      setTNombre(""); setTParcelas(""); setTPlantasList([]);
       loadTratamientos();
     } catch (e: any) {
       toast.error(e.message ?? "Error");
@@ -541,7 +562,7 @@ const Index = () => {
     setSavingK(key, true);
     try {
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
-      const plantasIni = plantasParaCausaIniciales(g.cama, g.tratamiento);
+      const plantasIni = plantasParaCausaIniciales(g.cama, g.tratamiento, g.parcela);
       const { error } = await supabase.from("perdidas").insert({
         cama: g.cama, variedad: g.variedad, parcela: g.parcela,
         tratamiento: g.tratamiento, causa: g.causa, tallos: t,
@@ -915,34 +936,64 @@ const Index = () => {
               {/* Tratamientos por cama */}
               <div>
                 <div className="font-mono text-xs uppercase font-bold text-lapis mb-3">TRATAMIENTOS DE LA CAMA {cama}</div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                   <div className="md:col-span-2">
                     <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Tratamiento (nombre)</label>
                     <input type="text" value={tNombre} onChange={(e) => setTNombre(e.target.value)}
                       placeholder="Ej: T1" className={inp} />
                   </div>
                   <div>
-                    <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Parcelas</label>
-                    <input type="number" min="0" value={tParcelas} onChange={(e) => setTParcelas(e.target.value)} className={inp} />
-                  </div>
-                  <div>
-                    <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Plantas/parcela</label>
-                    <input type="number" min="0" value={tPlantas} onChange={(e) => setTPlantas(e.target.value)} className={inp} />
+                    <label className="font-mono text-[10px] uppercase text-lapis mb-1 block">N° de parcelas</label>
+                    <input type="number" min="0" max="50" value={tParcelas} onChange={(e) => setTParcelas(e.target.value)} className={inp} />
                   </div>
                 </div>
+                {tPlantasList.length > 0 && (
+                  <div className="mt-4">
+                    <div className="font-mono text-[10px] uppercase text-lapis mb-2">Plantas por cada parcela</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                      {tPlantasList.map((v, idx) => (
+                        <div key={idx}>
+                          <label className="font-mono text-[10px] text-muted-foreground mb-1 block">Parcela {idx + 1}</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={v}
+                            onChange={(e) => setTPlantasList((p) => p.map((x, k) => k === idx ? e.target.value : x))}
+                            className={inp}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <button onClick={añadirTratamiento} disabled={tratSaving}
                   className="mt-3 font-mono text-xs uppercase tracking-widest bg-lapis text-background px-4 py-2 hover:bg-accent-orange transition-colors disabled:opacity-30">
                   {tratSaving ? "Guardando…" : "+ Añadir tratamiento"}
                 </button>
                 {tratamientosDeCama(cama).length > 0 && (
-                  <ul className="mt-4 space-y-1 font-mono text-xs">
-                    {tratamientosDeCama(cama).map((t) => (
-                      <li key={t.id} className="flex justify-between items-center border-b border-lapis/10 py-2">
-                        <span><span className="font-bold text-lapis">{t.nombre}</span>
-                          <span className="text-muted-foreground ml-3">· {t.parcelas} parcelas · {t.plantas_por_parcela} plantas/parcela</span></span>
-                        <button onClick={() => eliminarTratamiento(t.id)} className="text-accent-orange hover:underline text-[10px] uppercase">Eliminar</button>
-                      </li>
-                    ))}
+                  <ul className="mt-4 space-y-2 font-mono text-xs">
+                    {tratamientosDeCama(cama).map((t) => {
+                      const lista = t.plantas_lista && t.plantas_lista.length > 0
+                        ? t.plantas_lista
+                        : Array.from({ length: t.parcelas }, () => t.plantas_por_parcela);
+                      const total = lista.reduce((a, b) => a + (b || 0), 0);
+                      return (
+                        <li key={t.id} className="border-b border-lapis/10 py-2">
+                          <div className="flex justify-between items-center">
+                            <span>
+                              <span className="font-bold text-lapis">{t.nombre}</span>
+                              <span className="text-muted-foreground ml-3">· {t.parcelas} parcelas · {total} plantas total</span>
+                            </span>
+                            <button onClick={() => eliminarTratamiento(t.id)} className="text-accent-orange hover:underline text-[10px] uppercase">Eliminar</button>
+                          </div>
+                          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+                            {lista.map((n, idx) => (
+                              <span key={idx}>P{idx + 1}: <span className="text-lapis font-bold">{n}</span></span>
+                            ))}
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
