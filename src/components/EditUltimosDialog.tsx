@@ -65,7 +65,7 @@ export default function EditUltimosDialog({ open, onClose, tipo, registros, siem
     if (!window.confirm("¿Eliminar este registro? Esta acción no se puede deshacer.")) return;
     setDeletingId(id);
     try {
-      const { error } = await supabase.from(TABLA[tipo]).delete().eq("id", id);
+      const { error } = await (supabase.from(TABLA[tipo]) as any).delete().eq("id", id);
       if (error) throw error;
       if (ensayoCodigo) await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: TABLA[tipo], registro_id: id, descripcion: `Eliminó un registro de ${TABLA[tipo]}` });
       setRows((prev) => prev.filter((r) => r.id !== id));
@@ -112,7 +112,7 @@ export default function EditUltimosDialog({ open, onClose, tipo, registros, siem
           payload.tallos_por_ramo = Number(r.tallos_por_ramo) || 0;
           payload.peso_g = Number(r.peso_g) || 0;
         }
-        const { error } = await supabase.from(TABLA[tipo]).update(payload).eq("id", r.id);
+        const { error } = await (supabase.from(TABLA[tipo]) as any).update(payload).eq("id", r.id);
         if (error) throw error;
         if (ensayoCodigo) await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "update", tabla: TABLA[tipo], registro_id: r.id, descripcion: `Editó un registro de ${TABLA[tipo]} (cama ${r.cama} parcela ${r.parcela})`, datos: payload });
       }
