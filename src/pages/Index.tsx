@@ -186,6 +186,7 @@ const Index = () => {
 
   const dl = {
     prod: (fmt: "xlsx" | "csv") => exportProductividad(registros as any, siembrasMap, fmt),
+    prodDet: (fmt: "xlsx" | "csv") => exportProductividadDetallado(registros as any, siembrasMap, fmt),
     perd: (fmt: "xlsx" | "csv") => exportPerdidas(perdidas as any, registros as any, siembrasMap, fmt),
     tallos: (fmt: "xlsx" | "csv") => exportTallos(tallos as any, siembrasMap, fmt),
     ramos: (fmt: "xlsx" | "csv") => exportRamos(ramosPeso as any, siembrasMap, fmt),
