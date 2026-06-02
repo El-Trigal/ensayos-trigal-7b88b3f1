@@ -562,7 +562,7 @@ const Index = () => {
     setSavingK(key, true);
     try {
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
-      const plantasIni = plantasParaCausaIniciales(g.cama, g.tratamiento);
+      const plantasIni = plantasParaCausaIniciales(g.cama, g.tratamiento, g.parcela);
       const { error } = await supabase.from("perdidas").insert({
         cama: g.cama, variedad: g.variedad, parcela: g.parcela,
         tratamiento: g.tratamiento, causa: g.causa, tallos: t,
