@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   buildSiembrasMap,
   exportProductividad,
+  exportProductividadDetallado,
   exportPerdidas,
   exportTallos,
   exportRamos,
@@ -120,7 +121,7 @@ const Index = () => {
   const [parcelas, setParcelas] = useState<string>("");
   const [plantasPorParcela, setPlantasPorParcela] = useState<string>("");
 
-  type Registro = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; fecha: string; bloque: number | null };
+  type Registro = { id: string; cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; tallos_de_mas: number; total: number; fecha: string; bloque: number | null };
   const [registros, setRegistros] = useState<Registro[]>([]);
 
   const CAUSAS_FIJAS = ["Botón corona", "Botrytis", "Compuesto", "Daño mecanico", "Delgados", "Espiga corta", "Flor Abierta", "Malformación", "Mezcla", "Mutación", "Pocos puntos", "Secadera", "Tallos cortos", "Torcidos", "Vegetativo"] as const;
@@ -159,11 +160,11 @@ const Index = () => {
   const [causaSaving, setCausaSaving] = useState(false);
 
   // ===== Grupos dinámicos (1..4) =====
-  type ProdGroup = { cama: string; variedad: string; parcela: string; tratamiento: string; ramos: string; tallos: string };
+  type ProdGroup = { cama: string; variedad: string; parcela: string; tratamiento: string; ramos: string; tallos: string; extra: string };
   type PerdGroup = { cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: string };
   type TallosGroup = { cama: string; parcela: string; tratamiento: string; longitud: string; botones: string; puntos2: string; piso: string };
   type RamosGroup = { cama: string; parcela: string; tratamiento: string; tallosPorRamo: string; peso: string };
-  const emptyProd = (): ProdGroup => ({ cama: "", variedad: "", parcela: "", tratamiento: "", ramos: "", tallos: "" });
+  const emptyProd = (): ProdGroup => ({ cama: "", variedad: "", parcela: "", tratamiento: "", ramos: "", tallos: "", extra: "" });
   const emptyPerd = (): PerdGroup => ({ cama: "", variedad: "", parcela: "", tratamiento: "", causa: "", tallos: "" });
   const emptyTallos = (): TallosGroup => ({ cama: "", parcela: "", tratamiento: "", longitud: "", botones: "", puntos2: "", piso: "sin" });
   const emptyRamos = (): RamosGroup => ({ cama: "", parcela: "", tratamiento: "", tallosPorRamo: "", peso: "" });
@@ -185,6 +186,7 @@ const Index = () => {
 
   const dl = {
     prod: (fmt: "xlsx" | "csv") => exportProductividad(registros as any, siembrasMap, fmt),
+    prodDet: (fmt: "xlsx" | "csv") => exportProductividadDetallado(registros as any, siembrasMap, fmt),
     perd: (fmt: "xlsx" | "csv") => exportPerdidas(perdidas as any, registros as any, siembrasMap, fmt),
     tallos: (fmt: "xlsx" | "csv") => exportTallos(tallos as any, siembrasMap, fmt),
     ramos: (fmt: "xlsx" | "csv") => exportRamos(ramosPeso as any, siembrasMap, fmt),
@@ -266,6 +268,7 @@ const Index = () => {
     if (prod) setRegistros(prod.map((r: any) => ({
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
       tratamiento: r.tratamiento, ramos: r.ramos, tallos: r.tallos_por_ramo,
+      tallos_de_mas: r.tallos_de_mas ?? 0,
       total: r.total, fecha: r.created_at, bloque: r.bloque ?? null,
     })));
     if (perd) setPerdidas(perd.map((r: any) => ({
@@ -556,6 +559,7 @@ const Index = () => {
     const g = prodGroups[i];
     const r = parseInt(g.ramos) || 0;
     const t = parseInt(g.tallos) || 0;
+    const extra = parseInt(g.extra) || 0;
     if (!g.cama || !g.variedad || !g.parcela || !g.tratamiento || r <= 0 || t <= 0) return;
     setSavingK(key, true);
     try {
@@ -563,14 +567,14 @@ const Index = () => {
       const { data: ins, error } = await supabase.from("productividad").insert({
         cama: g.cama, variedad: g.variedad, parcela: g.parcela,
         tratamiento: g.tratamiento, ramos: r,
-        tallos_por_ramo: t, total: r * t,
+        tallos_por_ramo: t, tallos_de_mas: extra, total: r * t + extra,
         ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
       }).select("id").maybeSingle();
       if (error) throw error;
-      setProdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, ramos: "", tallos: "" } : x));
+      setProdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, ramos: "", tallos: "", extra: "" } : x));
       toast.success("Dato registrado correctamente");
       await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "productividad", registro_id: ins?.id ?? null,
-        descripcion: `Registró ${r} ramos × ${t} tallos en cama ${g.cama} parcela ${g.parcela} (${g.variedad}) — trat. ${g.tratamiento}` });
+        descripcion: `Registró ${r} ramos × ${t} tallos (+${extra} de más) en cama ${g.cama} parcela ${g.parcela} (${g.variedad}) — trat. ${g.tratamiento}` });
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
     } finally {
@@ -800,6 +804,7 @@ const Index = () => {
                 <div className="flex items-center gap-3">
                   <button onClick={() => dl.prod("xlsx")} disabled={registros.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30">↓ Excel</button>
                   <button onClick={() => dl.prod("csv")} disabled={registros.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30">↓ CSV</button>
+                  <button onClick={() => dl.prodDet("xlsx")} disabled={registros.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30">↓ Excel detallado</button>
                   {acumulados.length > 0 && <button onClick={limpiarProductividad} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>}
                 </div>
               </div>
@@ -1132,6 +1137,7 @@ const Index = () => {
               {prodGroups.map((g, i) => {
                 const r = parseInt(g.ramos) || 0;
                 const t = parseInt(g.tallos) || 0;
+                const ex = parseInt(g.extra) || 0;
                 const valid = g.cama && g.variedad && g.parcela && g.tratamiento && r > 0 && t > 0;
                 const trats = tratamientosDeCama(g.cama);
                 const nP = parcelasOpciones(g.cama, g.tratamiento);
@@ -1162,13 +1168,15 @@ const Index = () => {
                       <select value={g.parcela} onChange={(e) => setProdGroups((p) => p.map((x, k) => k === i ? { ...x, parcela: e.target.value } : x))} disabled={nP <= 0} className={inp}>
                         <option value="">—</option>{Array.from({ length: nP }, (_, n) => n + 1).map((n) => <option key={n} value={n}>Parcela {n}</option>)}
                       </select></div>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Ramos</label>
                         <input type="number" min="0" value={g.ramos} onChange={(e) => setProdGroups((p) => p.map((x, k) => k === i ? { ...x, ramos: e.target.value } : x))} className={inp} /></div>
                       <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Tallos/ramo</label>
                         <input type="number" min="0" value={g.tallos} onChange={(e) => setProdGroups((p) => p.map((x, k) => k === i ? { ...x, tallos: e.target.value } : x))} className={inp} /></div>
+                      <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Tallos de más</label>
+                        <input type="number" min="0" value={g.extra} onChange={(e) => setProdGroups((p) => p.map((x, k) => k === i ? { ...x, extra: e.target.value } : x))} className={inp} /></div>
                     </div>
-                    {valid && <div className="font-mono text-[10px] text-accent-orange">Total: {(r * t).toLocaleString("es")} tallos</div>}
+                    {valid && <div className="font-mono text-[10px] text-accent-orange">Total: {(r * t + ex).toLocaleString("es")} tallos {ex > 0 && <span className="text-muted-foreground">({r * t} en ramos + {ex} de más)</span>}</div>}
                     <button onClick={() => añadirProdGrupo(i)} disabled={!valid || isSaving(sk)} className={btnSec}>
                       {isSaving(sk) ? "Guardando…" : "Añadir"}
                     </button>

@@ -1,0 +1,1 @@
+ALTER TABLE public.productividad ADD COLUMN IF NOT EXISTS tallos_de_mas integer NOT NULL DEFAULT 0;

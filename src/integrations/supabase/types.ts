@@ -167,6 +167,7 @@ export type Database = {
           id: string
           parcela: string
           ramos: number
+          tallos_de_mas: number
           tallos_por_ramo: number
           total: number
           tratamiento: string
@@ -180,6 +181,7 @@ export type Database = {
           id?: string
           parcela: string
           ramos?: number
+          tallos_de_mas?: number
           tallos_por_ramo?: number
           total?: number
           tratamiento: string
@@ -193,6 +195,7 @@ export type Database = {
           id?: string
           parcela?: string
           ramos?: number
+          tallos_de_mas?: number
           tallos_por_ramo?: number
           total?: number
           tratamiento?: string
