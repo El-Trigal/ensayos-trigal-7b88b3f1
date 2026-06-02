@@ -1,0 +1,1 @@
+ALTER TABLE public.tratamientos ADD COLUMN IF NOT EXISTS plantas_lista jsonb;
