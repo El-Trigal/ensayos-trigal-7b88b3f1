@@ -918,7 +918,6 @@ const Index = () => {
                     });
                     return out;
                   })()}</tbody>
-                    </tr>))}</tbody>
                 </table></div>
               )}
             </section>
