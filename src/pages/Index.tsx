@@ -847,18 +847,32 @@ const Index = () => {
                     <th className="text-left p-3 uppercase">Tratamiento</th><th className="text-right p-3 uppercase">Tallo #</th>
                     <th className="text-right p-3 uppercase">Longitud (cm)</th><th className="text-right p-3 uppercase">Puntos</th><th className="text-right p-3 uppercase">Piso 2</th>
                   </tr></thead>
-                  <tbody>{[...tallos].sort((a, b) =>
-                    a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) ||
-                    a.tratamiento.localeCompare(b.tratamiento) || a.numero - b.numero
-                  ).map((t) => (
-                    <tr key={t.id} className="border-b border-lapis/10 hover:bg-accent-orange/10">
-                      <td className="p-3 font-bold text-lapis">{t.cama}</td><td className="p-3 font-bold text-lapis">Parcela {t.parcela}</td>
-                      <td className="p-3 text-lapis">{t.tratamiento}</td>
-                      <td className="p-3 text-right text-accent-orange font-bold">Tallo {t.numero}</td>
-                      <td className="p-3 text-right">{t.longitud_cm}</td>
-                      <td className="p-3 text-right">{t.botones}</td>
-                      <td className="p-3 text-right">{t.botones_piso2 ?? "—"}</td>
-                    </tr>))}</tbody>
+                  <tbody>{(() => {
+                    const sorted = [...tallos].sort((a, b) =>
+                      dayOf(b.fecha).localeCompare(dayOf(a.fecha)) ||
+                      a.cama.localeCompare(b.cama) || Number(a.parcela) - Number(b.parcela) ||
+                      a.tratamiento.localeCompare(b.tratamiento) || a.numero - b.numero
+                    );
+                    const out: JSX.Element[] = []; let last = "";
+                    sorted.forEach((t) => {
+                      const d = dayOf(t.fecha);
+                      if (d !== last) {
+                        out.push(<tr key={`day-${d}`} className="bg-lapis/10"><td colSpan={7} className="p-2 font-bold text-lapis uppercase">📅 {fmtDay(d)}</td></tr>);
+                        last = d;
+                      }
+                      out.push(
+                        <tr key={t.id} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{t.cama}</td><td className="p-3 font-bold text-lapis">Parcela {t.parcela}</td>
+                          <td className="p-3 text-lapis">{t.tratamiento}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">Tallo {t.numero}</td>
+                          <td className="p-3 text-right">{t.longitud_cm}</td>
+                          <td className="p-3 text-right">{t.botones}</td>
+                          <td className="p-3 text-right">{t.botones_piso2 ?? "—"}</td>
+                        </tr>
+                      );
+                    });
+                    return out;
+                  })()}</tbody>
                 </table></div>
               )}
             </section>
