@@ -266,6 +266,7 @@ const Index = () => {
     if (prod) setRegistros(prod.map((r: any) => ({
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
       tratamiento: r.tratamiento, ramos: r.ramos, tallos: r.tallos_por_ramo,
+      tallos_de_mas: r.tallos_de_mas ?? 0,
       total: r.total, fecha: r.created_at, bloque: r.bloque ?? null,
     })));
     if (perd) setPerdidas(perd.map((r: any) => ({
