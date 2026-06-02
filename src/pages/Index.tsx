@@ -89,6 +89,7 @@ const Index = () => {
     toast.success(`Ensayo ${c} creado`);
     setEnsayoInput("");
     setEnsayoActivo(c);
+    await logHistorial({ ensayo_codigo: c, accion: "insert", tabla: "ensayos", descripcion: `Creó el ensayo ${c}` });
   };
 
   const ingresarEnsayo = async () => {
