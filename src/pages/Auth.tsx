@@ -49,7 +49,7 @@ export default function Auth() {
       } else {
         const v = loginSchema.safeParse({ email, password });
         if (!v.success) { toast.error(v.error.issues[0].message); return; }
-        const { error } = await supabase.auth.signInWithPassword(v.data);
+        const { error } = await supabase.auth.signInWithPassword({ email: v.data.email, password: v.data.password });
         if (error) throw error;
         nav("/", { replace: true });
       }
