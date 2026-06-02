@@ -52,6 +52,13 @@ const parseExcelDate = (v: any): string | null => {
 
 const MAX_GRUPOS = 4;
 
+const dayOf = (iso: string) => (iso || "").slice(0, 10);
+const fmtDay = (d: string) => {
+  if (!d) return "Sin fecha";
+  const [y, m, dd] = d.split("-");
+  return `${dd}/${m}/${y}`;
+};
+
 const Index = () => {
   // ===== Ensayo activo =====
   const [ensayoCodigo, setEnsayoCodigo] = useState<string | null>(() => {
