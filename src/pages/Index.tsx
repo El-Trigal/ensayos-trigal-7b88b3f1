@@ -1134,6 +1134,7 @@ const Index = () => {
               {prodGroups.map((g, i) => {
                 const r = parseInt(g.ramos) || 0;
                 const t = parseInt(g.tallos) || 0;
+                const ex = parseInt(g.extra) || 0;
                 const valid = g.cama && g.variedad && g.parcela && g.tratamiento && r > 0 && t > 0;
                 const trats = tratamientosDeCama(g.cama);
                 const nP = parcelasOpciones(g.cama, g.tratamiento);
@@ -1164,13 +1165,15 @@ const Index = () => {
                       <select value={g.parcela} onChange={(e) => setProdGroups((p) => p.map((x, k) => k === i ? { ...x, parcela: e.target.value } : x))} disabled={nP <= 0} className={inp}>
                         <option value="">—</option>{Array.from({ length: nP }, (_, n) => n + 1).map((n) => <option key={n} value={n}>Parcela {n}</option>)}
                       </select></div>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Ramos</label>
                         <input type="number" min="0" value={g.ramos} onChange={(e) => setProdGroups((p) => p.map((x, k) => k === i ? { ...x, ramos: e.target.value } : x))} className={inp} /></div>
                       <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Tallos/ramo</label>
                         <input type="number" min="0" value={g.tallos} onChange={(e) => setProdGroups((p) => p.map((x, k) => k === i ? { ...x, tallos: e.target.value } : x))} className={inp} /></div>
+                      <div><label className="font-mono text-[10px] uppercase text-lapis mb-1 block">Tallos de más</label>
+                        <input type="number" min="0" value={g.extra} onChange={(e) => setProdGroups((p) => p.map((x, k) => k === i ? { ...x, extra: e.target.value } : x))} className={inp} /></div>
                     </div>
-                    {valid && <div className="font-mono text-[10px] text-accent-orange">Total: {(r * t).toLocaleString("es")} tallos</div>}
+                    {valid && <div className="font-mono text-[10px] text-accent-orange">Total: {(r * t + ex).toLocaleString("es")} tallos {ex > 0 && <span className="text-muted-foreground">({r * t} en ramos + {ex} de más)</span>}</div>}
                     <button onClick={() => añadirProdGrupo(i)} disabled={!valid || isSaving(sk)} className={btnSec}>
                       {isSaving(sk) ? "Guardando…" : "Añadir"}
                     </button>
