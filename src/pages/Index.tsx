@@ -1507,6 +1507,9 @@ const Index = () => {
           onSaved={() => loadRegistros()}
         />
       )}
+      {ensayoCodigo && (
+        <HistorialDialog open={openHistorial} onClose={() => setOpenHistorial(false)} ensayoCodigo={ensayoCodigo} />
+      )}
     </div>
   );
 };
