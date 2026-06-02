@@ -673,30 +673,35 @@ const Index = () => {
     if (!confirm("¿Eliminar TODOS los registros de productividad?")) return;
     const { error } = await supabase.from("productividad").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
+    else await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "productividad", descripcion: "Eliminó TODOS los registros de productividad" });
   };
   const limpiarPerdidas = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de pérdidas?")) return;
     const { error } = await supabase.from("perdidas").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
+    else await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "perdidas", descripcion: "Eliminó TODOS los registros de pérdidas" });
   };
   const limpiarTallos = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de longitud y puntos?")) return;
     const { error } = await supabase.from("tallos").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
+    else await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "tallos", descripcion: "Eliminó TODOS los registros de longitud y puntos" });
   };
   const limpiarRamos = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de peso de ramo?")) return;
     const { error } = await supabase.from("ramos_peso").delete().eq("ensayo_codigo", ensayoCodigo);
     if (error) toast.error(error.message);
+    else await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "ramos_peso", descripcion: "Eliminó TODOS los registros de peso de ramo" });
   };
   const limpiarTodo = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODAS las siembras de la base de datos?")) return;
     const { error } = await supabase.from("siembras").delete().eq("ensayo_codigo", ensayoCodigo);
-    if (error) toast.error(error.message); else toast.success("Base de datos limpiada");
+    if (error) toast.error(error.message);
+    else { toast.success("Base de datos limpiada"); await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "siembras", descripcion: "Eliminó TODAS las siembras del ensayo" }); }
   };
 
   // Mostrar las secciones de toma cuando hay siembras cargadas
