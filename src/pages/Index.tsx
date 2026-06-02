@@ -809,13 +809,24 @@ const Index = () => {
                     <th className="text-left p-3 uppercase">Parcela</th><th className="text-left p-3 uppercase">Tratamiento</th>
                     <th className="text-left p-3 uppercase">Causa</th><th className="text-right p-3 uppercase">Registros</th><th className="text-right p-3 uppercase">Total tallos</th>
                   </tr></thead>
-                  <tbody>{acumuladosPerdidas.map((a) => (
-                    <tr key={`${a.cama}-${a.variedad}-${a.parcela}-${a.tratamiento}-${a.causa}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
-                      <td className="p-3 font-bold text-lapis">{a.cama}</td><td className="p-3 text-lapis">{a.variedad}</td>
-                      <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td><td className="p-3 text-lapis">{a.tratamiento}</td>
-                      <td className="p-3 text-lapis">{a.causa}</td><td className="p-3 text-right">{a.n}</td>
-                      <td className="p-3 text-right text-accent-orange font-bold">{a.tallos.toLocaleString("es")}</td>
-                    </tr>))}</tbody>
+                  <tbody>{(() => {
+                    const out: JSX.Element[] = []; let last = "";
+                    acumuladosPerdidas.forEach((a) => {
+                      if (a.fecha !== last) {
+                        out.push(<tr key={`day-${a.fecha}`} className="bg-lapis/10"><td colSpan={7} className="p-2 font-bold text-lapis uppercase">📅 {fmtDay(a.fecha)}</td></tr>);
+                        last = a.fecha;
+                      }
+                      out.push(
+                        <tr key={`${a.fecha}-${a.cama}-${a.variedad}-${a.parcela}-${a.tratamiento}-${a.causa}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-lapis">{a.cama}</td><td className="p-3 text-lapis">{a.variedad}</td>
+                          <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td><td className="p-3 text-lapis">{a.tratamiento}</td>
+                          <td className="p-3 text-lapis">{a.causa}</td><td className="p-3 text-right">{a.n}</td>
+                          <td className="p-3 text-right text-accent-orange font-bold">{a.tallos.toLocaleString("es")}</td>
+                        </tr>
+                      );
+                    });
+                    return out;
+                  })()}</tbody>
                 </table></div>
               )}
             </section>
