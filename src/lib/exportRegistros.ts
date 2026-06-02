@@ -111,6 +111,7 @@ export type ProdRow = {
   cama: string; variedad: string; parcela: string; tratamiento: string;
   ramos: number; tallos: number; total: number; fecha: string;
   bloque?: number | null;
+  tallos_de_mas?: number | null;
 };
 
 export const exportProductividad = (
@@ -144,6 +145,44 @@ export const exportProductividad = (
     ];
   });
   downloadFile(data, headers, "Productividad", format, "Hoja1");
+};
+
+// ===== Productividad detallado (con tallos de más) =====
+export const exportProductividadDetallado = (
+  rows: ProdRow[],
+  siembrasMap: Map<string, SiembraInfo>,
+  format: "xlsx" | "csv",
+) => {
+  const headers = [
+    "Fecha siembra", "Fecha de corte (día)", "Semana del año", "Días Después de la Siembra",
+    "Variedad", "Bloque", "Cama", "Parcela", "Lado", "Tratamiento",
+    "Número de Ramos", "Número de tallos ramos", "Número tallos de más", "Número de tallos",
+  ];
+  const data = rows.map((r) => {
+    const info = lookupSiembra(siembrasMap, r.cama);
+    const { numero, lado } = parseCama(r.cama);
+    const fechaCorte = fmtDate(r.fecha);
+    const ramos = r.ramos;
+    const tallosEnRamos = r.ramos * r.tallos;
+    const extra = r.tallos_de_mas ?? 0;
+    return [
+      info.fechaSiembra ?? "",
+      fechaCorte,
+      getISOWeek(fechaCorte),
+      daysBetween(info.fechaSiembra, fechaCorte),
+      r.variedad ?? info.variedad ?? "",
+      r.bloque ?? info.bloque ?? "",
+      numero,
+      r.parcela,
+      lado,
+      r.tratamiento,
+      ramos,
+      tallosEnRamos,
+      extra,
+      tallosEnRamos + extra,
+    ];
+  });
+  downloadFile(data, headers, "Productividad detallado", format, "Hoja1");
 };
 
 // ===== Perdidas =====
