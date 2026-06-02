@@ -391,7 +391,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_ensayos_inactive: { Args: never; Returns: undefined }
+      cleanup_historial_old: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
