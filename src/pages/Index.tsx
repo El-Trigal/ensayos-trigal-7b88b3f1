@@ -427,6 +427,8 @@ const Index = () => {
       });
       if (error) throw error;
       toast.success(`Tratamiento "${nombre}" creado`);
+      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "tratamientos",
+        descripcion: `Creó tratamiento "${nombre}" en cama ${cama} (${p} parcelas)`, datos: { cama, nombre, parcelas: p, plantas_lista: lista } });
       setTNombre(""); setTParcelas(""); setTPlantasList([]);
       loadTratamientos();
     } catch (e: any) {
@@ -438,9 +440,14 @@ const Index = () => {
 
   const eliminarTratamiento = async (id: string) => {
     if (!confirm("¿Eliminar este tratamiento? Los registros ya guardados no se borrarán.")) return;
+    const t = tratamientos.find((x) => x.id === id);
     const { error } = await supabase.from("tratamientos").delete().eq("id", id);
     if (error) toast.error(error.message);
-    else { toast.success("Tratamiento eliminado"); loadTratamientos(); }
+    else {
+      toast.success("Tratamiento eliminado");
+      if (ensayoCodigo && t) await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "tratamientos", registro_id: id, descripcion: `Eliminó tratamiento "${t.nombre}" de cama ${t.cama}` });
+      loadTratamientos();
+    }
   };
 
   // ===== Causa personalizada CRUD =====
@@ -456,6 +463,7 @@ const Index = () => {
       });
       if (error) throw error;
       toast.success(`Causa "${nombre}" creada`);
+      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "causas_personalizadas", descripcion: `Creó causa personalizada "${nombre}"` });
       setNuevaCausaInput((p) => ({ ...p, [groupIdx]: "" }));
       loadCausas();
     } catch (e: any) {
