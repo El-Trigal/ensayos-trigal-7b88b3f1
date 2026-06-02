@@ -804,6 +804,7 @@ const Index = () => {
                 <div className="flex items-center gap-3">
                   <button onClick={() => dl.prod("xlsx")} disabled={registros.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30">↓ Excel</button>
                   <button onClick={() => dl.prod("csv")} disabled={registros.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30">↓ CSV</button>
+                  <button onClick={() => dl.prodDet("xlsx")} disabled={registros.length === 0} className="font-mono text-xs uppercase text-lapis hover:underline disabled:opacity-30">↓ Excel detallado</button>
                   {acumulados.length > 0 && <button onClick={limpiarProductividad} className="font-mono text-xs uppercase text-accent-orange hover:underline">Limpiar</button>}
                 </div>
               </div>
