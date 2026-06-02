@@ -971,14 +971,29 @@ const Index = () => {
                   {tratSaving ? "Guardando…" : "+ Añadir tratamiento"}
                 </button>
                 {tratamientosDeCama(cama).length > 0 && (
-                  <ul className="mt-4 space-y-1 font-mono text-xs">
-                    {tratamientosDeCama(cama).map((t) => (
-                      <li key={t.id} className="flex justify-between items-center border-b border-lapis/10 py-2">
-                        <span><span className="font-bold text-lapis">{t.nombre}</span>
-                          <span className="text-muted-foreground ml-3">· {t.parcelas} parcelas · {t.plantas_por_parcela} plantas/parcela</span></span>
-                        <button onClick={() => eliminarTratamiento(t.id)} className="text-accent-orange hover:underline text-[10px] uppercase">Eliminar</button>
-                      </li>
-                    ))}
+                  <ul className="mt-4 space-y-2 font-mono text-xs">
+                    {tratamientosDeCama(cama).map((t) => {
+                      const lista = t.plantas_lista && t.plantas_lista.length > 0
+                        ? t.plantas_lista
+                        : Array.from({ length: t.parcelas }, () => t.plantas_por_parcela);
+                      const total = lista.reduce((a, b) => a + (b || 0), 0);
+                      return (
+                        <li key={t.id} className="border-b border-lapis/10 py-2">
+                          <div className="flex justify-between items-center">
+                            <span>
+                              <span className="font-bold text-lapis">{t.nombre}</span>
+                              <span className="text-muted-foreground ml-3">· {t.parcelas} parcelas · {total} plantas total</span>
+                            </span>
+                            <button onClick={() => eliminarTratamiento(t.id)} className="text-accent-orange hover:underline text-[10px] uppercase">Eliminar</button>
+                          </div>
+                          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+                            {lista.map((n, idx) => (
+                              <span key={idx}>P{idx + 1}: <span className="text-lapis font-bold">{n}</span></span>
+                            ))}
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
