@@ -113,7 +113,7 @@ const Index = () => {
   const [data, setData] = useState<Siembra[]>([]);
   const [loading, setLoading] = useState(false);
   const [vista, setVista] = useState<"inventario" | "toma" | "registros">("inventario");
-  const [openSec, setOpenSec] = useState<Record<string, boolean>>({ prod: true, perd: false, tallos: false, ramos: false });
+  const [openSec, setOpenSec] = useState<Record<string, boolean>>({ prod: true, perd: false, tallos: false, ramos: false, regProd: true, regPerd: true, regTallos: true, regRamos: true });
   const toggleSec = (k: string) => setOpenSec((p) => ({ ...p, [k]: !p[k] }));
   const [bloque, setBloque] = useState<string>("");
   const [cama, setCama] = useState<string>("");
