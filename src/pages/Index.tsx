@@ -560,7 +560,8 @@ const Index = () => {
     const r = parseInt(g.ramos) || 0;
     const t = parseInt(g.tallos) || 0;
     const extra = parseInt(g.extra) || 0;
-    if (!g.cama || !g.variedad || !g.parcela || !g.tratamiento || r <= 0 || t <= 0) return;
+    if (!g.cama || !g.variedad || !g.parcela || !g.tratamiento) return;
+    if ((r <= 0 || t <= 0) && extra <= 0) return;
     setSavingK(key, true);
     try {
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
@@ -1138,7 +1139,7 @@ const Index = () => {
                 const r = parseInt(g.ramos) || 0;
                 const t = parseInt(g.tallos) || 0;
                 const ex = parseInt(g.extra) || 0;
-                const valid = g.cama && g.variedad && g.parcela && g.tratamiento && r > 0 && t > 0;
+                const valid = !!(g.cama && g.variedad && g.parcela && g.tratamiento && ((r > 0 && t > 0) || ex > 0));
                 const trats = tratamientosDeCama(g.cama);
                 const nP = parcelasOpciones(g.cama, g.tratamiento);
                 const sk = `prod-${i}`;
