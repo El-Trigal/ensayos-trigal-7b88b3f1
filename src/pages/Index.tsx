@@ -14,6 +14,7 @@ import EditUltimosDialog from "@/components/EditUltimosDialog";
 import HistorialDialog from "@/components/HistorialDialog";
 import { logHistorial } from "@/lib/historial";
 import { useAuth } from "@/hooks/useAuth";
+import Layout from "@/components/Layout";
 
 type Siembra = {
   id: string;
@@ -68,41 +69,45 @@ const Index = () => {
   const [ensayoCodigo, setEnsayoCodigo] = useState<string | null>(() => {
     try { return localStorage.getItem("ensayo_codigo"); } catch { return null; }
   });
+  const [ensayoId, setEnsayoId] = useState<string | null>(null);
   const [ensayoModo, setEnsayoModo] = useState<"crear" | "ingresar">("ingresar");
   const [ensayoInput, setEnsayoInput] = useState("");
   const [ensayoLoading, setEnsayoLoading] = useState(false);
 
-  const setEnsayoActivo = (codigo: string | null) => {
+  const setEnsayoActivo = (codigo: string | null, id: string | null = null) => {
     if (codigo) localStorage.setItem("ensayo_codigo", codigo);
     else localStorage.removeItem("ensayo_codigo");
     setEnsayoCodigo(codigo);
+    setEnsayoId(id);
   };
 
   const crearEnsayo = async () => {
     const c = ensayoInput.trim();
     if (!/^\d{5}$/.test(c)) { toast.error("El código debe tener exactamente 5 dígitos numéricos"); return; }
     setEnsayoLoading(true);
-    const { data: ex } = await supabase.from("ensayos").select("codigo").eq("codigo", c).maybeSingle();
+    const { data: ex } = await supabase.from("ensayos").select("id, codigo").eq("codigo", c).maybeSingle();
     if (ex) { setEnsayoLoading(false); toast.error("Ya existe un ensayo con ese código"); return; }
-    const { error } = await supabase.from("ensayos").insert({ codigo: c });
+    const { data: nuevo, error } = await supabase.from("ensayos")
+      .insert({ codigo: c, sede_id: profile?.sede_id } as any)
+      .select("id").maybeSingle();
     setEnsayoLoading(false);
     if (error) { toast.error(error.message); return; }
     toast.success(`Ensayo ${c} creado`);
     setEnsayoInput("");
-    setEnsayoActivo(c);
-    await logHistorial({ ensayo_codigo: c, accion: "insert", tabla: "ensayos", descripcion: `Creó el ensayo ${c}` });
+    setEnsayoActivo(c, (nuevo as any)?.id ?? null);
+    await logHistorial({ ensayo_id: (nuevo as any)?.id ?? null, accion: "insert", tabla: "ensayos", descripcion: `Creó el ensayo ${c}` });
   };
 
   const ingresarEnsayo = async () => {
     const c = ensayoInput.trim();
     if (!/^\d{5}$/.test(c)) { toast.error("El código debe tener exactamente 5 dígitos numéricos"); return; }
     setEnsayoLoading(true);
-    const { data: ex, error } = await supabase.from("ensayos").select("codigo").eq("codigo", c).maybeSingle();
+    const { data: ex, error } = await supabase.from("ensayos").select("id, codigo").eq("codigo", c).maybeSingle();
     setEnsayoLoading(false);
     if (error) { toast.error(error.message); return; }
     if (!ex) { toast.error("El ensayo no existe. Verifica el código o crea un nuevo ensayo."); return; }
     setEnsayoInput("");
-    setEnsayoActivo(c);
+    setEnsayoActivo(c, (ex as any)?.id ?? null);
   };
 
   const salirEnsayo = () => {
@@ -200,7 +205,7 @@ const Index = () => {
       const { data, error } = await supabase
         .from("siembras")
         .select("*")
-        .eq("ensayo_codigo", ensayoCodigo)
+        .eq("ensayo_id", ensayoId)
         .order("bloque")
         .range(from, from + pageSize - 1);
       if (error) { toast.error(error.message); return; }
@@ -224,7 +229,7 @@ const Index = () => {
     const { data, error } = await supabase
       .from("tratamientos")
       .select("*")
-      .eq("ensayo_codigo", ensayoCodigo)
+      .eq("ensayo_id", ensayoId)
       .order("created_at");
     if (error) { toast.error(error.message); return; }
     setTratamientos((data ?? []).map((r: any) => ({
@@ -238,7 +243,7 @@ const Index = () => {
     const { data, error } = await supabase
       .from("causas_personalizadas")
       .select("*")
-      .eq("ensayo_codigo", ensayoCodigo)
+      .eq("ensayo_id", ensayoId)
       .order("created_at");
     if (error) { toast.error(error.message); return; }
     setCausasPers((data ?? []).map((r: any) => ({ id: r.id, nombre: r.nombre })));
@@ -260,10 +265,10 @@ const Index = () => {
       setRegistros([]); setPerdidas([]); setTallos([]); setRamosPeso([]); return;
     }
     const [{ data: prod }, { data: perd }, { data: tlls }, { data: rmps }] = await Promise.all([
-      supabase.from("productividad").select("*").eq("ensayo_codigo", ensayoCodigo).order("created_at", { ascending: false }),
-      supabase.from("perdidas").select("*").eq("ensayo_codigo", ensayoCodigo).order("created_at", { ascending: false }),
-      supabase.from("tallos").select("*").eq("ensayo_codigo", ensayoCodigo).order("created_at", { ascending: false }),
-      supabase.from("ramos_peso").select("*").eq("ensayo_codigo", ensayoCodigo).order("created_at", { ascending: false }),
+      supabase.from("productividad").select("*").eq("ensayo_id", ensayoId).order("created_at", { ascending: false }),
+      supabase.from("perdidas").select("*").eq("ensayo_id", ensayoId).order("created_at", { ascending: false }),
+      supabase.from("tallos").select("*").eq("ensayo_id", ensayoId).order("created_at", { ascending: false }),
+      supabase.from("ramos_peso").select("*").eq("ensayo_id", ensayoId).order("created_at", { ascending: false }),
     ]);
     if (prod) setRegistros(prod.map((r: any) => ({
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
@@ -332,7 +337,7 @@ const Index = () => {
         if (error) throw error;
       }
       toast.success(`${records.length} siembras cargadas`);
-      if (ensayoCodigo) await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "siembras", descripcion: `Cargó inventario con ${records.length} siembras` });
+      if (ensayoCodigo) await logHistorial({ ensayo_id: ensayoId, accion: "insert", tabla: "siembras", descripcion: `Cargó inventario con ${records.length} siembras` });
     } catch (e: any) {
       toast.error(e.message ?? "Error");
     } finally {
@@ -431,7 +436,7 @@ const Index = () => {
       });
       if (error) throw error;
       toast.success(`Tratamiento "${nombre}" creado`);
-      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "tratamientos",
+      await logHistorial({ ensayo_id: ensayoId, accion: "insert", tabla: "tratamientos",
         descripcion: `Creó tratamiento "${nombre}" en cama ${cama} (${p} parcelas)`, datos: { cama, nombre, parcelas: p, plantas_lista: lista } });
       setTNombre(""); setTParcelas(""); setTPlantasList([]);
       loadTratamientos();
@@ -449,7 +454,7 @@ const Index = () => {
     if (error) toast.error(error.message);
     else {
       toast.success("Tratamiento eliminado");
-      if (ensayoCodigo && t) await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "tratamientos", registro_id: id, descripcion: `Eliminó tratamiento "${t.nombre}" de cama ${t.cama}` });
+      if (ensayoCodigo && t) await logHistorial({ ensayo_id: ensayoId, accion: "delete", tabla: "tratamientos", registro_id: id, descripcion: `Eliminó tratamiento "${t.nombre}" de cama ${t.cama}` });
       loadTratamientos();
     }
   };
@@ -467,7 +472,7 @@ const Index = () => {
       });
       if (error) throw error;
       toast.success(`Causa "${nombre}" creada`);
-      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "causas_personalizadas", descripcion: `Creó causa personalizada "${nombre}"` });
+      await logHistorial({ ensayo_id: ensayoId, accion: "insert", tabla: "causas", descripcion: `Creó causa personalizada "${nombre}"` });
       setNuevaCausaInput((p) => ({ ...p, [groupIdx]: "" }));
       loadCausas();
     } catch (e: any) {
@@ -574,7 +579,7 @@ const Index = () => {
       if (error) throw error;
       setProdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, ramos: "", tallos: "", extra: "" } : x));
       toast.success("Dato registrado correctamente");
-      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "productividad", registro_id: ins?.id ?? null,
+      await logHistorial({ ensayo_id: ensayoId, accion: "insert", tabla: "productividad", registro_id: ins?.id ?? null,
         descripcion: `Registró ${r} ramos × ${t} tallos (+${extra} de más) en cama ${g.cama} parcela ${g.parcela} (${g.variedad}) — trat. ${g.tratamiento}` });
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
@@ -602,7 +607,7 @@ const Index = () => {
       if (error) throw error;
       setPerdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, tallos: "" } : x));
       toast.success("Pérdida registrada correctamente");
-      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "perdidas", registro_id: ins?.id ?? null,
+      await logHistorial({ ensayo_id: ensayoId, accion: "insert", tabla: "perdidas", registro_id: ins?.id ?? null,
         descripcion: `Registró pérdida de ${t} tallos en cama ${g.cama} parcela ${g.parcela} (${g.variedad}) por "${g.causa}"` });
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
@@ -636,7 +641,7 @@ const Index = () => {
       if (error) throw error;
       setTallosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, longitud: "", botones: "", puntos2: "" } : x));
       toast.success(`Tallo ${numero} registrado`);
-      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "tallos", registro_id: ins?.id ?? null,
+      await logHistorial({ ensayo_id: ensayoId, accion: "insert", tabla: "tallos", registro_id: ins?.id ?? null,
         descripcion: `Registró tallo #${numero} en cama ${g.cama} parcela ${g.parcela} — long ${lon}cm, ${bot} puntos${esPisos ? ` + ${bot2} piso2` : ""}` });
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
@@ -665,7 +670,7 @@ const Index = () => {
       if (error) throw error;
       setRamosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, tallosPorRamo: "", peso: "" } : x));
       toast.success(`Ramo ${numero} registrado`);
-      await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "insert", tabla: "ramos_peso", registro_id: ins?.id ?? null,
+      await logHistorial({ ensayo_id: ensayoId, accion: "insert", tabla: "ramos_peso", registro_id: ins?.id ?? null,
         descripcion: `Registró ramo #${numero} en cama ${g.cama} parcela ${g.parcela} — ${tpr} tallos, ${peso}g` });
     } catch (e: any) {
       toast.error(e.message ?? "Error al guardar");
@@ -677,37 +682,37 @@ const Index = () => {
   const limpiarProductividad = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de productividad?")) return;
-    const { error } = await supabase.from("productividad").delete().eq("ensayo_codigo", ensayoCodigo);
+    const { error } = await supabase.from("productividad").delete().eq("ensayo_id", ensayoId);
     if (error) toast.error(error.message);
-    else await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "productividad", descripcion: "Eliminó TODOS los registros de productividad" });
+    else await logHistorial({ ensayo_id: ensayoId, accion: "delete", tabla: "productividad", descripcion: "Eliminó TODOS los registros de productividad" });
   };
   const limpiarPerdidas = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de pérdidas?")) return;
-    const { error } = await supabase.from("perdidas").delete().eq("ensayo_codigo", ensayoCodigo);
+    const { error } = await supabase.from("perdidas").delete().eq("ensayo_id", ensayoId);
     if (error) toast.error(error.message);
-    else await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "perdidas", descripcion: "Eliminó TODOS los registros de pérdidas" });
+    else await logHistorial({ ensayo_id: ensayoId, accion: "delete", tabla: "perdidas", descripcion: "Eliminó TODOS los registros de pérdidas" });
   };
   const limpiarTallos = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de longitud y puntos?")) return;
-    const { error } = await supabase.from("tallos").delete().eq("ensayo_codigo", ensayoCodigo);
+    const { error } = await supabase.from("tallos").delete().eq("ensayo_id", ensayoId);
     if (error) toast.error(error.message);
-    else await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "tallos", descripcion: "Eliminó TODOS los registros de longitud y puntos" });
+    else await logHistorial({ ensayo_id: ensayoId, accion: "delete", tabla: "tallos", descripcion: "Eliminó TODOS los registros de longitud y puntos" });
   };
   const limpiarRamos = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de peso de ramo?")) return;
-    const { error } = await supabase.from("ramos_peso").delete().eq("ensayo_codigo", ensayoCodigo);
+    const { error } = await supabase.from("ramos_peso").delete().eq("ensayo_id", ensayoId);
     if (error) toast.error(error.message);
-    else await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "ramos_peso", descripcion: "Eliminó TODOS los registros de peso de ramo" });
+    else await logHistorial({ ensayo_id: ensayoId, accion: "delete", tabla: "ramos_peso", descripcion: "Eliminó TODOS los registros de peso de ramo" });
   };
   const limpiarTodo = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODAS las siembras de la base de datos?")) return;
-    const { error } = await supabase.from("siembras").delete().eq("ensayo_codigo", ensayoCodigo);
+    const { error } = await supabase.from("siembras").delete().eq("ensayo_id", ensayoId);
     if (error) toast.error(error.message);
-    else { toast.success("Base de datos limpiada"); await logHistorial({ ensayo_codigo: ensayoCodigo, accion: "delete", tabla: "siembras", descripcion: "Eliminó TODAS las siembras del ensayo" }); }
+    else { toast.success("Base de datos limpiada"); await logHistorial({ ensayo_id: ensayoId, accion: "delete", tabla: "siembras", descripcion: "Eliminó TODAS las siembras del ensayo" }); }
   };
 
   // Mostrar las secciones de toma cuando hay siembras cargadas
@@ -720,32 +725,21 @@ const Index = () => {
   const groupsRow = "p-4 md:p-6 flex gap-4 overflow-x-auto snap-x snap-mandatory";
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6 md:p-12">
-      <nav className="max-w-7xl mx-auto flex flex-wrap gap-4 justify-between items-end border-b-2 border-lapis pb-6 mb-12">
-        <div>
-          <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2 block">Flores el trigal</span>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter uppercase text-lapis">Aplicativo de ensayos</h1>
-        </div>
-        {ensayoCodigo && (
-          <div className="flex gap-6 items-center font-mono text-xs uppercase">
-            <span className="text-muted-foreground">Ensayo:</span>
-            <span className="text-accent-orange font-bold">{ensayoCodigo}</span>
-            <span className="text-muted-foreground">·</span>
-            <span className="text-muted-foreground">Total inventario:</span>
-            <span className="text-accent-orange">{data.length.toLocaleString("es")}</span>
-            <button onClick={salirEnsayo} className="ml-2 border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background transition-colors">Salir</button>
-            <button onClick={() => setOpenHistorial(true)} className="border-2 border-lapis px-3 py-1 text-lapis hover:bg-lapis hover:text-background transition-colors">Historial</button>
+    <Layout title={ensayoCodigo ? `Ensayo ${ensayoCodigo}` : "Ensayos"}>
+    <div className="text-foreground">
+      {ensayoCodigo && (
+        <div className="flex flex-wrap gap-3 items-center font-mono text-xs uppercase mb-4 bg-secondary/50 rounded-xl px-4 py-2.5">
+          <span className="text-muted-foreground">Ensayo:</span>
+          <span className="text-accent-orange font-bold">{ensayoCodigo}</span>
+          <span className="text-muted-foreground">·</span>
+          <span className="text-muted-foreground">Inventario:</span>
+          <span className="text-accent-orange">{data.length.toLocaleString("es")}</span>
+          <div className="ml-auto flex gap-2">
+            <button onClick={() => setOpenHistorial(true)} className="border border-lapis px-3 py-1 text-lapis rounded-lg hover:bg-lapis hover:text-white transition-colors text-[10px]">Historial</button>
+            <button onClick={salirEnsayo} className="border border-destructive px-3 py-1 text-destructive rounded-lg hover:bg-destructive hover:text-white transition-colors text-[10px]">Salir</button>
           </div>
-        )}
-        <div className="flex gap-3 items-center font-mono text-[10px] uppercase ml-auto">
-          {profile?.nombre_completo && <span className="text-muted-foreground">{profile.nombre_completo}</span>}
-          {user && (
-            <button onClick={signOut} className="border-2 border-accent-orange px-3 py-1 text-accent-orange hover:bg-accent-orange hover:text-background transition-colors">
-              Cerrar sesión
-            </button>
-          )}
         </div>
-      </nav>
+      )}
 
       {!ensayoCodigo ? (
         <main className="max-w-xl mx-auto">
@@ -1529,6 +1523,7 @@ const Index = () => {
         <HistorialDialog open={openHistorial} onClose={() => setOpenHistorial(false)} ensayoCodigo={ensayoCodigo} />
       )}
     </div>
+    </Layout>
   );
 };
 

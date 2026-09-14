@@ -2,91 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    /* Industrial Suizo - Lapislázuli edition */
-    --background: 47 18% 94%;        /* #F2F2EE off-white */
-    --foreground: 220 65% 18%;       /* lapis lazuli deep blue */
-    --lapis: 220 65% 22%;
+    --background: 220 20% 97%;
+    --foreground: 220 60% 14%;
+
+    --lapis: 220 65% 26%;
     --lapis-deep: 220 70% 14%;
-    --accent-orange: 18 100% 50%;    /* #FF4D00 */
+    --accent-orange: 22 100% 52%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 65% 18%;
+    --card-foreground: 220 60% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 65% 18%;
+    --popover-foreground: 220 60% 14%;
 
-    --primary: 220 65% 22%;
-    --primary-foreground: 47 18% 94%;
+    --primary: 220 65% 26%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 47 18% 88%;
-    --secondary-foreground: 220 65% 18%;
+    --secondary: 220 15% 92%;
+    --secondary-foreground: 220 60% 14%;
 
-    --muted: 47 12% 86%;
-    --muted-foreground: 220 15% 40%;
+    --muted: 220 12% 90%;
+    --muted-foreground: 220 15% 46%;
 
-    --accent: 18 100% 50%;
+    --accent: 22 100% 52%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 50%;
+    --destructive: 0 84% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 65% 18%;
-    --input: 220 65% 18%;
-    --ring: 220 65% 22%;
+    --border: 220 15% 86%;
+    --input: 220 15% 86%;
+    --ring: 220 65% 26%;
 
-    --radius: 0;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* bottom nav height — used for content padding */
+    --nav-h: 64px;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background: 220 25% 10%;
+    --foreground: 220 15% 95%;
+    --card: 220 25% 14%;
+    --card-foreground: 220 15% 95%;
+    --popover: 220 25% 14%;
+    --popover-foreground: 220 15% 95%;
+    --primary: 220 65% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 20% 20%;
+    --secondary-foreground: 220 15% 90%;
+    --muted: 220 20% 18%;
+    --muted-foreground: 220 15% 60%;
+    --accent: 22 100% 52%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 38%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 20% 22%;
+    --input: 220 20% 22%;
+    --ring: 220 65% 55%;
+    --lapis: 220 65% 55%;
+    --lapis-deep: 220 65% 70%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -99,21 +85,27 @@ All colors MUST be HSL.
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
+  * { @apply border-border; }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
-  }
-  .font-mono {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
 }
 
 @layer utilities {
-  .border-lapis { border-color: hsl(var(--lapis)); }
-  .bg-lapis { background-color: hsl(var(--lapis)); }
-  .text-lapis { color: hsl(var(--lapis)); }
+  .border-lapis  { border-color: hsl(var(--lapis)); }
+  .bg-lapis      { background-color: hsl(var(--lapis)); }
+  .text-lapis    { color: hsl(var(--lapis)); }
+  .bg-lapis-deep { background-color: hsl(var(--lapis-deep)); }
+  /* safe-area for notched phones */
+  .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 0.5rem); }
 }
+
+/* Smooth tap highlight removal on mobile */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Input number — hide arrows */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
