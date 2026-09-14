@@ -2,22 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { z } from "zod";
-
-const signupSchema = z.object({
-  nombre: z.string().trim().min(2, "Nombre muy corto").max(100),
-  email: z.string().trim().email("Email inválido").max(255),
-  password: z.string().min(6, "Mínimo 6 caracteres").max(72),
-});
-const loginSchema = z.object({
-  email: z.string().trim().email("Email inválido").max(255),
-  password: z.string().min(1, "Ingresa tu contraseña").max(72),
-});
 
 export default function Auth() {
   const nav = useNavigate();
-  const [mode, setMode] = useState<"login" | "signup">("login");
-  const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -31,32 +18,20 @@ export default function Auth() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim() || !password) return;
     setLoading(true);
     try {
-      if (mode === "signup") {
-        const v = signupSchema.safeParse({ nombre, email, password });
-        if (!v.success) { toast.error(v.error.issues[0].message); return; }
-        const { error } = await supabase.auth.signUp({
-          email: v.data.email,
-          password: v.data.password,
-          options: { data: { nombre_completo: v.data.nombre } },
-        });
-        if (error) throw error;
-        toast.success("Cuenta creada. Iniciando sesión…");
-        nav("/", { replace: true });
-      } else {
-        const v = loginSchema.safeParse({ email, password });
-        if (!v.success) { toast.error(v.error.issues[0].message); return; }
-        const { error } = await supabase.auth.signInWithPassword({ email: v.data.email, password: v.data.password });
-        if (error) throw error;
-        nav("/", { replace: true });
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) throw error;
+      nav("/", { replace: true });
     } catch (err: any) {
-      toast.error(err.message ?? "Error de autenticación");
+      toast.error(err.message ?? "Credenciales incorrectas");
     } finally {
       setLoading(false);
     }
   };
+
+  const inp = "w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-lapis/40 transition";
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -72,49 +47,22 @@ export default function Auth() {
       {/* Card */}
       <div className="flex-1 px-5 -mt-5">
         <div className="bg-card rounded-2xl shadow-lg overflow-hidden">
-          {/* Tabs */}
-          <div className="flex border-b border-border">
-            {(["login", "signup"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={`flex-1 py-4 text-sm font-semibold transition-colors ${
-                  mode === m
-                    ? "text-lapis border-b-2 border-lapis bg-secondary/30"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {m === "login" ? "Iniciar sesión" : "Registrarse"}
-              </button>
-            ))}
+          <div className="px-6 pt-6 pb-2">
+            <h2 className="text-base font-bold text-foreground">Iniciar sesión</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Ingresa con tu cuenta corporativa</p>
           </div>
 
-          <form onSubmit={submit} className="p-6 space-y-4">
-            {mode === "signup" && (
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">
-                  Nombre completo
-                </label>
-                <input
-                  className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-lapis/40 transition"
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                  placeholder="Tu nombre"
-                  required maxLength={100}
-                />
-              </div>
-            )}
-
+          <form onSubmit={submit} className="p-6 pt-4 space-y-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">
                 Email
               </label>
               <input
                 type="email"
-                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-lapis/40 transition"
+                className={inp}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="correo@empresa.com"
+                placeholder="correo@floreseltrigal.com"
                 required maxLength={255}
                 autoComplete="email"
               />
@@ -127,12 +75,12 @@ export default function Auth() {
               <div className="relative">
                 <input
                   type={showPwd ? "text" : "password"}
-                  className="w-full rounded-xl border border-input bg-background px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-lapis/40 transition"
+                  className={`${inp} pr-12`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  required minLength={6} maxLength={72}
-                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  required maxLength={72}
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -164,9 +112,9 @@ export default function Auth() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                   </svg>
-                  Procesando…
+                  Ingresando…
                 </span>
-              ) : mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
+              ) : "Iniciar sesión"}
             </button>
           </form>
         </div>
