@@ -81,6 +81,15 @@ const Index = () => {
     setEnsayoId(id);
   };
 
+  // Recuperar ensayoId desde la BD cuando viene de localStorage (recarga de página)
+  useEffect(() => {
+    if (!ensayoCodigo || ensayoId) return;
+    supabase.from("ensayos").select("id").eq("codigo", ensayoCodigo).maybeSingle().then(({ data }) => {
+      if (data) setEnsayoId((data as any).id);
+      else setEnsayoActivo(null, null); // ensayo ya no existe
+    });
+  }, [ensayoCodigo]);
+
   const crearEnsayo = async () => {
     const c = ensayoInput.trim();
     if (!/^\d{5}$/.test(c)) { toast.error("El código debe tener exactamente 5 dígitos numéricos"); return; }
@@ -198,7 +207,7 @@ const Index = () => {
   };
 
   const load = async () => {
-    if (!ensayoCodigo) { setData([]); return; }
+    if (!ensayoId) { setData([]); return; }
     const all: Siembra[] = [];
     const pageSize = 1000;
     for (let from = 0; ; from += pageSize) {
@@ -216,16 +225,16 @@ const Index = () => {
   };
 
   useEffect(() => {
-    if (!ensayoCodigo) return;
+    if (!ensayoId) return;
     load();
     const ch = supabase.channel("siembras-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "siembras" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [ensayoCodigo]);
+  }, [ensayoId]);
 
   const loadTratamientos = async () => {
-    if (!ensayoCodigo) { setTratamientos([]); return; }
+    if (!ensayoId) { setTratamientos([]); return; }
     const { data, error } = await supabase
       .from("tratamientos")
       .select("*")
@@ -239,7 +248,7 @@ const Index = () => {
   };
 
   const loadCausas = async () => {
-    if (!ensayoCodigo) { setCausasPers([]); return; }
+    if (!ensayoId) { setCausasPers([]); return; }
     const { data, error } = await supabase
       .from("causas")
       .select("*")
@@ -251,7 +260,7 @@ const Index = () => {
   };
 
   useEffect(() => {
-    if (!ensayoCodigo) return;
+    if (!ensayoId) return;
     loadTratamientos();
     loadCausas();
     const ch = supabase.channel("trat-causas-rt")
@@ -259,10 +268,10 @@ const Index = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "causas" }, () => loadCausas())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [ensayoCodigo]);
+  }, [ensayoId]);
 
   const loadRegistros = async () => {
-    if (!ensayoCodigo) {
+    if (!ensayoId) {
       setRegistros([]); setPerdidas([]); setTallos([]); setRamosPeso([]); return;
     }
     const [{ data: prod }, { data: perd }, { data: tlls }, { data: rmps }] = await Promise.all([
@@ -296,7 +305,7 @@ const Index = () => {
   };
 
   useEffect(() => {
-    if (!ensayoCodigo) return;
+    if (!ensayoId) return;
     loadRegistros();
     const ch = supabase.channel("registros-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "productividad" }, () => loadRegistros())
@@ -305,7 +314,7 @@ const Index = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "ramos_peso" }, () => loadRegistros())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [ensayoCodigo]);
+  }, [ensayoId]);
 
   const handleFile = async (file: File) => {
     if (!ensayoCodigo) return;
