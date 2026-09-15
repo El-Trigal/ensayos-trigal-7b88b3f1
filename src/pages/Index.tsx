@@ -454,7 +454,8 @@ const Index = () => {
     setTratSaving(true);
     try {
       const { error } = await supabase.from("tratamientos").insert({
-        ensayo_codigo: ensayoCodigo, cama, nombre, parcelas: p, plantas_por_parcela: pp,
+        ensayo_id: ensayoId, sede_id: profile?.sede_id ?? null,
+        cama, nombre, parcelas: p, plantas_por_parcela: pp,
         plantas_lista: lista as any,
       });
       if (error) throw error;
@@ -597,7 +598,7 @@ const Index = () => {
         cama: g.cama, variedad: g.variedad, parcela: g.parcela,
         tratamiento: g.tratamiento, ramos: r,
         tallos_por_ramo: t, tallos_de_mas: extra, total: r * t + extra,
-        ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
+        ensayo_id: ensayoId, sede_id: profile?.sede_id ?? null, bloque: bloqueRow,
       }).select("id").maybeSingle();
       if (error) throw error;
       setProdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, ramos: "", tallos: "", extra: "" } : x));
@@ -625,7 +626,7 @@ const Index = () => {
       const { data: ins, error } = await supabase.from("perdidas").insert({
         cama: g.cama, variedad: g.variedad, parcela: g.parcela,
         tratamiento: g.tratamiento, causa: g.causa, tallos: t,
-        ensayo_codigo: ensayoCodigo, bloque: bloqueRow, plantas_iniciales: plantasIni,
+        ensayo_id: ensayoId, sede_id: profile?.sede_id ?? null, bloque: bloqueRow, plantas_iniciales: plantasIni,
       }).select("id").maybeSingle();
       if (error) throw error;
       setPerdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, tallos: "" } : x));
@@ -659,7 +660,7 @@ const Index = () => {
         numero, longitud_cm: lon, botones: bot,
         botones_piso2: esPisos ? bot2 : null,
         piso: esPisos ? "pisos" : null,
-        ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
+        ensayo_id: ensayoId, sede_id: profile?.sede_id ?? null, bloque: bloqueRow,
       }).select("id").maybeSingle();
       if (error) throw error;
       setTallosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, longitud: "", botones: "", puntos2: "" } : x));
@@ -688,7 +689,7 @@ const Index = () => {
       const { data: ins, error } = await supabase.from("ramos_peso").insert({
         cama: g.cama, parcela: g.parcela, tratamiento: g.tratamiento,
         numero, tallos_por_ramo: tpr, peso_g: peso,
-        ensayo_codigo: ensayoCodigo, bloque: bloqueRow,
+        ensayo_id: ensayoId, sede_id: profile?.sede_id ?? null, bloque: bloqueRow,
       }).select("id").maybeSingle();
       if (error) throw error;
       setRamosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, tallosPorRamo: "", peso: "" } : x));
