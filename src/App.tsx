@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Auth from "./pages/Auth";
 import Index from "./pages/Index";
 import Usuarios from "./pages/admin/Usuarios";
+import Ensayos from "./pages/Ensayos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,9 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<Protected><Index /></Protected>} />
+            <Route path="/ensayos" element={
+              <Protected><AdminGuard><Ensayos /></AdminGuard></Protected>
+            } />
             <Route path="/admin/usuarios" element={
               <Protected><AdminGuard><Usuarios /></AdminGuard></Protected>
             } />

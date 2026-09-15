@@ -73,6 +73,7 @@ const Index = () => {
   const [ensayoId, setEnsayoId] = useState<string | null>(null);
   const [ensayoModo, setEnsayoModo] = useState<"crear" | "ingresar">("ingresar");
   const [ensayoInput, setEnsayoInput] = useState("");
+  const [ensayoNombre, setEnsayoNombre] = useState("");
   const [ensayoLoading, setEnsayoLoading] = useState(false);
 
   const setEnsayoActivo = (codigo: string | null, id: string | null = null) => {
@@ -98,14 +99,15 @@ const Index = () => {
     const { data: ex } = await supabase.from("ensayos").select("id, codigo").eq("codigo", c).maybeSingle();
     if (ex) { setEnsayoLoading(false); toast.error("Ya existe un ensayo con ese código"); return; }
     const { data: nuevo, error } = await supabase.from("ensayos")
-      .insert({ codigo: c, sede_id: profile?.sede_id } as any)
+      .insert({ codigo: c, nombre: ensayoNombre.trim() || null, sede_id: profile?.sede_id } as any)
       .select("id").maybeSingle();
     setEnsayoLoading(false);
     if (error) { toast.error(dbError(error)); return; }
     toast.success(`Ensayo ${c} creado`);
     setEnsayoInput("");
+    setEnsayoNombre("");
     setEnsayoActivo(c, (nuevo as any)?.id ?? null);
-    await logHistorial({ ensayo_id: (nuevo as any)?.id ?? null, accion: "insert", tabla: "ensayos", descripcion: `Creó el ensayo ${c}` });
+    await logHistorial({ ensayo_id: (nuevo as any)?.id ?? null, accion: "insert", tabla: "ensayos", descripcion: `Creó el ensayo ${c}${ensayoNombre.trim() ? ` — ${ensayoNombre.trim()}` : ""}` });
   };
 
   const ingresarEnsayo = async () => {
@@ -775,7 +777,7 @@ const Index = () => {
         <main className="max-w-xl mx-auto">
           <div className="border-2 border-lapis bg-white">
             <div className="flex border-b-2 border-lapis">
-              <button onClick={() => { setEnsayoModo("crear"); setEnsayoInput(""); }}
+              <button onClick={() => { setEnsayoModo("crear"); setEnsayoInput(""); setEnsayoNombre(""); }}
                 className={`flex-1 font-mono text-xs uppercase tracking-widest px-6 py-4 transition-colors ${ensayoModo === "crear" ? "bg-lapis text-background" : "text-lapis hover:bg-accent-orange/10"}`}>
                 Crear ensayo
               </button>
@@ -793,6 +795,19 @@ const Index = () => {
                 onKeyDown={(e) => { if (e.key === "Enter") (ensayoModo === "crear" ? crearEnsayo : ingresarEnsayo)(); }}
                 placeholder="12345"
                 className="w-full border-2 border-lapis bg-background px-4 py-3 font-mono text-2xl tracking-[0.5em] text-center text-lapis focus:outline-none focus:bg-accent-orange/5" />
+              {ensayoModo === "crear" && (
+                <>
+                  <label className="font-mono text-xs uppercase tracking-widest text-muted-foreground block">
+                    Nombre del ensayo (opcional)
+                  </label>
+                  <input
+                    value={ensayoNombre}
+                    onChange={(e) => setEnsayoNombre(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") crearEnsayo(); }}
+                    placeholder="Ej. Rosas temporada enero 2026"
+                    className="w-full border-2 border-lapis bg-background px-4 py-3 text-sm text-lapis focus:outline-none focus:bg-accent-orange/5" />
+                </>
+              )}
               <button onClick={ensayoModo === "crear" ? crearEnsayo : ingresarEnsayo}
                 disabled={ensayoLoading || ensayoInput.length !== 5}
                 className="w-full bg-lapis text-background font-mono text-xs uppercase tracking-widest px-6 py-3 hover:bg-accent-orange disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
