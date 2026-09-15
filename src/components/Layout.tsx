@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
-type Tab = { label: string; path: string; icon: ReactNode; adminOnly?: boolean };
+type Tab = { label: string; path: string; icon: ReactNode; adminOnly?: boolean; jefeOnly?: boolean };
 
 const HomeIcon = () => (
   <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -22,16 +22,20 @@ const UsersIcon = () => (
 
 const TABS: Tab[] = [
   { label: "Inicio", path: "/", icon: <HomeIcon /> },
-  { label: "Ensayos", path: "/ensayos", icon: <ListIcon />, adminOnly: true },
+  { label: "Ensayos", path: "/ensayos", icon: <ListIcon />, jefeOnly: true },
   { label: "Usuarios", path: "/admin/usuarios", icon: <UsersIcon />, adminOnly: true },
 ];
 
 export default function Layout({ children, title }: { children: ReactNode; title?: string }) {
   const nav = useNavigate();
   const loc = useLocation();
-  const { profile, signOut, canManageUsers } = useAuth();
+  const { profile, signOut, canManageUsers, isJefe } = useAuth();
 
-  const visibleTabs = TABS.filter((t) => !t.adminOnly || canManageUsers);
+  const visibleTabs = TABS.filter((t) => {
+    if (t.adminOnly) return canManageUsers;
+    if (t.jefeOnly) return canManageUsers || isJefe;
+    return true;
+  });
   const hasTabs = visibleTabs.length > 1;
 
   return (

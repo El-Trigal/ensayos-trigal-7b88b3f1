@@ -29,6 +29,13 @@ const AdminGuard = ({ children }: { children: JSX.Element }) => {
   return children;
 };
 
+const JefeGuard = ({ children }: { children: JSX.Element }) => {
+  const { canManageUsers, isJefe, loading } = useAuth();
+  if (loading) return null;
+  if (!canManageUsers && !isJefe) return <Navigate to="/" replace />;
+  return children;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -39,7 +46,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<Protected><Index /></Protected>} />
             <Route path="/ensayos" element={
-              <Protected><AdminGuard><Ensayos /></AdminGuard></Protected>
+              <Protected><JefeGuard><Ensayos /></JefeGuard></Protected>
             } />
             <Route path="/admin/usuarios" element={
               <Protected><AdminGuard><Usuarios /></AdminGuard></Protected>
