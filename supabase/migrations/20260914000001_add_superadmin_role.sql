@@ -9,7 +9,7 @@ ALTER TABLE public.profiles
   ADD CONSTRAINT profiles_rol_check
   CHECK (rol IN ('superadmin', 'admin', 'jefe', 'aprendiz'));
 
--- 2. Función: retorna true si el usuario es superadmin o admin
+-- 2. Funciones helper de autenticación
 CREATE OR REPLACE FUNCTION public.auth_is_admin()
   RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public'
 AS $$
@@ -21,6 +21,27 @@ BEGIN
 END;
 $$;
 REVOKE EXECUTE ON FUNCTION public.auth_is_admin() FROM PUBLIC, anon;
+
+CREATE OR REPLACE FUNCTION public.auth_rol()
+  RETURNS text LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $$
+BEGIN
+  RETURN COALESCE(
+    (SELECT rol FROM public.profiles WHERE user_id = auth.uid() LIMIT 1),
+    'aprendiz'
+  );
+END;
+$$;
+REVOKE EXECUTE ON FUNCTION public.auth_rol() FROM PUBLIC, anon;
+
+CREATE OR REPLACE FUNCTION public.auth_sede_id()
+  RETURNS uuid LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $$
+BEGIN
+  RETURN (SELECT sede_id FROM public.profiles WHERE user_id = auth.uid() LIMIT 1);
+END;
+$$;
+REVOKE EXECUTE ON FUNCTION public.auth_sede_id() FROM PUBLIC, anon;
 
 -- 3. sedes
 DROP POLICY IF EXISTS "sedes_insert" ON public.sedes;
