@@ -241,9 +241,10 @@ const Index = () => {
   const loadCausas = async () => {
     if (!ensayoCodigo) { setCausasPers([]); return; }
     const { data, error } = await supabase
-      .from("causas_personalizadas")
+      .from("causas")
       .select("*")
       .eq("ensayo_id", ensayoId)
+      .eq("es_fija", false)
       .order("created_at");
     if (error) { toast.error(error.message); return; }
     setCausasPers((data ?? []).map((r: any) => ({ id: r.id, nombre: r.nombre })));
@@ -255,7 +256,7 @@ const Index = () => {
     loadCausas();
     const ch = supabase.channel("trat-causas-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "tratamientos" }, () => loadTratamientos())
-      .on("postgres_changes", { event: "*", schema: "public", table: "causas_personalizadas" }, () => loadCausas())
+      .on("postgres_changes", { event: "*", schema: "public", table: "causas" }, () => loadCausas())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [ensayoCodigo]);
@@ -467,8 +468,8 @@ const Index = () => {
     if (causasDisponibles.includes(nombre)) { toast.error("Esa causa ya existe"); return; }
     setCausaSaving(true);
     try {
-      const { error } = await supabase.from("causas_personalizadas").insert({
-        ensayo_codigo: ensayoCodigo, nombre,
+      const { error } = await supabase.from("causas").insert({
+        ensayo_id: ensayoId, nombre, es_fija: false,
       });
       if (error) throw error;
       toast.success(`Causa "${nombre}" creada`);
