@@ -13,6 +13,7 @@ import {
 import EditUltimosDialog from "@/components/EditUltimosDialog";
 import HistorialDialog from "@/components/HistorialDialog";
 import { logHistorial } from "@/lib/historial";
+import { dbError } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import Layout from "@/components/Layout";
 
@@ -100,7 +101,7 @@ const Index = () => {
       .insert({ codigo: c, sede_id: profile?.sede_id } as any)
       .select("id").maybeSingle();
     setEnsayoLoading(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(dbError(error)); return; }
     toast.success(`Ensayo ${c} creado`);
     setEnsayoInput("");
     setEnsayoActivo(c, (nuevo as any)?.id ?? null);
@@ -113,7 +114,7 @@ const Index = () => {
     setEnsayoLoading(true);
     const { data: ex, error } = await supabase.from("ensayos").select("id, codigo").eq("codigo", c).maybeSingle();
     setEnsayoLoading(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(dbError(error)); return; }
     if (!ex) { toast.error("El ensayo no existe. Verifica el código o crea un nuevo ensayo."); return; }
     setEnsayoInput("");
     setEnsayoActivo(c, (ex as any)?.id ?? null);
@@ -217,7 +218,7 @@ const Index = () => {
         .eq("ensayo_id", ensayoId)
         .order("bloque")
         .range(from, from + pageSize - 1);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(dbError(error)); return; }
       all.push(...((data ?? []) as Siembra[]));
       if (!data || data.length < pageSize) break;
     }
@@ -240,7 +241,7 @@ const Index = () => {
       .select("*")
       .eq("ensayo_id", ensayoId)
       .order("created_at");
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(dbError(error)); return; }
     setTratamientos((data ?? []).map((r: any) => ({
       id: r.id, cama: r.cama, nombre: r.nombre, parcelas: r.parcelas, plantas_por_parcela: r.plantas_por_parcela,
       plantas_lista: Array.isArray(r.plantas_lista) ? r.plantas_lista.map((x: any) => Number(x) || 0) : [],
@@ -255,7 +256,7 @@ const Index = () => {
       .eq("ensayo_id", ensayoId)
       .eq("es_fija", false)
       .order("created_at");
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(dbError(error)); return; }
     setCausasPers((data ?? []).map((r: any) => ({ id: r.id, nombre: r.nombre })));
   };
 
@@ -350,7 +351,7 @@ const Index = () => {
       toast.success(`${records.length} siembras cargadas`);
       if (ensayoCodigo) await logHistorial({ ensayo_id: ensayoId, accion: "insert", tabla: "siembras", descripcion: `Cargó inventario con ${records.length} siembras` });
     } catch (e: any) {
-      toast.error(e.message ?? "Error");
+      toast.error(dbError(e));
     } finally {
       setLoading(false);
     }
@@ -452,7 +453,7 @@ const Index = () => {
       setTNombre(""); setTParcelas(""); setTPlantasList([]);
       loadTratamientos();
     } catch (e: any) {
-      toast.error(e.message ?? "Error");
+      toast.error(dbError(e));
     } finally {
       setTratSaving(false);
     }
@@ -462,7 +463,7 @@ const Index = () => {
     if (!confirm("¿Eliminar este tratamiento? Los registros ya guardados no se borrarán.")) return;
     const t = tratamientos.find((x) => x.id === id);
     const { error } = await supabase.from("tratamientos").delete().eq("id", id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(dbError(error));
     else {
       toast.success("Tratamiento eliminado");
       if (ensayoCodigo && t) await logHistorial({ ensayo_id: ensayoId, accion: "delete", tabla: "tratamientos", registro_id: id, descripcion: `Eliminó tratamiento "${t.nombre}" de cama ${t.cama}` });
@@ -487,7 +488,7 @@ const Index = () => {
       setNuevaCausaInput((p) => ({ ...p, [groupIdx]: "" }));
       loadCausas();
     } catch (e: any) {
-      toast.error(e.message ?? "Error");
+      toast.error(dbError(e));
     } finally {
       setCausaSaving(false);
     }
@@ -593,7 +594,7 @@ const Index = () => {
       await logHistorial({ ensayo_id: ensayoId, accion: "insert", tabla: "productividad", registro_id: ins?.id ?? null,
         descripcion: `Registró ${r} ramos × ${t} tallos (+${extra} de más) en cama ${g.cama} parcela ${g.parcela} (${g.variedad}) — trat. ${g.tratamiento}` });
     } catch (e: any) {
-      toast.error(e.message ?? "Error al guardar");
+      toast.error(dbError(e));
     } finally {
       setSavingK(key, false);
     }
@@ -621,7 +622,7 @@ const Index = () => {
       await logHistorial({ ensayo_id: ensayoId, accion: "insert", tabla: "perdidas", registro_id: ins?.id ?? null,
         descripcion: `Registró pérdida de ${t} tallos en cama ${g.cama} parcela ${g.parcela} (${g.variedad}) por "${g.causa}"` });
     } catch (e: any) {
-      toast.error(e.message ?? "Error al guardar");
+      toast.error(dbError(e));
     } finally {
       setSavingK(key, false);
     }
@@ -655,7 +656,7 @@ const Index = () => {
       await logHistorial({ ensayo_id: ensayoId, accion: "insert", tabla: "tallos", registro_id: ins?.id ?? null,
         descripcion: `Registró tallo #${numero} en cama ${g.cama} parcela ${g.parcela} — long ${lon}cm, ${bot} puntos${esPisos ? ` + ${bot2} piso2` : ""}` });
     } catch (e: any) {
-      toast.error(e.message ?? "Error al guardar");
+      toast.error(dbError(e));
     } finally {
       setSavingK(key, false);
     }
@@ -684,7 +685,7 @@ const Index = () => {
       await logHistorial({ ensayo_id: ensayoId, accion: "insert", tabla: "ramos_peso", registro_id: ins?.id ?? null,
         descripcion: `Registró ramo #${numero} en cama ${g.cama} parcela ${g.parcela} — ${tpr} tallos, ${peso}g` });
     } catch (e: any) {
-      toast.error(e.message ?? "Error al guardar");
+      toast.error(dbError(e));
     } finally {
       setSavingK(key, false);
     }
@@ -694,35 +695,35 @@ const Index = () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de productividad?")) return;
     const { error } = await supabase.from("productividad").delete().eq("ensayo_id", ensayoId);
-    if (error) toast.error(error.message);
+    if (error) toast.error(dbError(error));
     else await logHistorial({ ensayo_id: ensayoId, accion: "delete", tabla: "productividad", descripcion: "Eliminó TODOS los registros de productividad" });
   };
   const limpiarPerdidas = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de pérdidas?")) return;
     const { error } = await supabase.from("perdidas").delete().eq("ensayo_id", ensayoId);
-    if (error) toast.error(error.message);
+    if (error) toast.error(dbError(error));
     else await logHistorial({ ensayo_id: ensayoId, accion: "delete", tabla: "perdidas", descripcion: "Eliminó TODOS los registros de pérdidas" });
   };
   const limpiarTallos = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de longitud y puntos?")) return;
     const { error } = await supabase.from("tallos").delete().eq("ensayo_id", ensayoId);
-    if (error) toast.error(error.message);
+    if (error) toast.error(dbError(error));
     else await logHistorial({ ensayo_id: ensayoId, accion: "delete", tabla: "tallos", descripcion: "Eliminó TODOS los registros de longitud y puntos" });
   };
   const limpiarRamos = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODOS los registros de peso de ramo?")) return;
     const { error } = await supabase.from("ramos_peso").delete().eq("ensayo_id", ensayoId);
-    if (error) toast.error(error.message);
+    if (error) toast.error(dbError(error));
     else await logHistorial({ ensayo_id: ensayoId, accion: "delete", tabla: "ramos_peso", descripcion: "Eliminó TODOS los registros de peso de ramo" });
   };
   const limpiarTodo = async () => {
     if (!ensayoCodigo) return;
     if (!confirm("¿Eliminar TODAS las siembras de la base de datos?")) return;
     const { error } = await supabase.from("siembras").delete().eq("ensayo_id", ensayoId);
-    if (error) toast.error(error.message);
+    if (error) toast.error(dbError(error));
     else { toast.success("Base de datos limpiada"); await logHistorial({ ensayo_id: ensayoId, accion: "delete", tabla: "siembras", descripcion: "Eliminó TODAS las siembras del ensayo" }); }
   };
 

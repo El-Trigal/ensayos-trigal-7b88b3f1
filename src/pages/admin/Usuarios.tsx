@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/hooks/useAuth";
 import type { Rol } from "@/hooks/useAuth";
+import { dbError } from "@/lib/utils";
 
 type Sede = { id: string; nombre: string };
 type Usuario = {
@@ -110,7 +111,7 @@ export default function Usuarios() {
       setNombre(""); setEmail(""); setPassword(""); setRolNuevo("aprendiz"); setSedeNueva("");
       await load();
     } catch (err: any) {
-      toast.error(err.message ?? "Error al crear usuario");
+      toast.error(dbError(err));
     } finally {
       setSaving(false);
     }
@@ -128,7 +129,7 @@ export default function Usuarios() {
       setEditId(null);
       await load();
     } catch (err: any) {
-      toast.error(err.message ?? "Error al actualizar");
+      toast.error(dbError(err));
     } finally {
       setEditSaving(false);
     }
