@@ -296,23 +296,23 @@ const Index = () => {
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
       tratamiento: r.tratamiento, ramos: r.ramos, tallos: r.tallos_por_ramo,
       tallos_de_mas: r.tallos_de_mas ?? 0,
-      total: r.total, fecha: r.created_at, bloque: r.bloque ?? null,
+      total: r.total, fecha: r.created_at, bloque: r.bloque ?? null, grupo: r.grupo ?? null,
     })));
     if (perd) setPerdidas(perd.map((r: any) => ({
       id: r.id, cama: r.cama, variedad: r.variedad, parcela: r.parcela,
       tratamiento: r.tratamiento, causa: r.causa, tallos: r.tallos, fecha: r.created_at,
-      bloque: r.bloque ?? null, plantas_iniciales: r.plantas_iniciales ?? null,
+      bloque: r.bloque ?? null, plantas_iniciales: r.plantas_iniciales ?? null, grupo: r.grupo ?? null,
     })));
     if (tlls) setTallos(tlls.map((r: any) => ({
       id: r.id, cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento,
       numero: r.numero, longitud_cm: Number(r.longitud_cm), botones: r.botones,
       botones_piso2: r.botones_piso2 ?? null,
-      piso: r.piso ?? null, fecha: r.created_at, bloque: r.bloque ?? null,
+      piso: r.piso ?? null, fecha: r.created_at, bloque: r.bloque ?? null, grupo: r.grupo ?? null,
     })));
     if (rmps) setRamosPeso(rmps.map((r: any) => ({
       id: r.id, cama: r.cama, parcela: r.parcela, tratamiento: r.tratamiento,
       numero: r.numero, tallos_por_ramo: r.tallos_por_ramo, peso_g: Number(r.peso_g), fecha: r.created_at,
-      bloque: r.bloque ?? null,
+      bloque: r.bloque ?? null, grupo: r.grupo ?? null,
     })));
   };
 
@@ -516,11 +516,11 @@ const Index = () => {
 
   // ===== Acumulados (sin cambios) =====
   const acumulados = useMemo(() => {
-    const m = new Map<string, { fecha: string; cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; n: number }>();
+    const m = new Map<string, { fecha: string; cama: string; variedad: string; parcela: string; tratamiento: string; ramos: number; tallos: number; total: number; n: number; grupo: number | null }>();
     registros.forEach((r) => {
       const fecha = (r.fecha || "").slice(0, 10);
-      const key = `${fecha}||${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}`;
-      const cur = m.get(key) ?? { fecha, cama: r.cama, variedad: r.variedad, parcela: r.parcela, tratamiento: r.tratamiento, ramos: 0, tallos: 0, total: 0, n: 0 };
+      const key = `${fecha}||${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}||${r.grupo ?? ""}`;
+      const cur = m.get(key) ?? { fecha, cama: r.cama, variedad: r.variedad, parcela: r.parcela, tratamiento: r.tratamiento, ramos: 0, tallos: 0, total: 0, n: 0, grupo: r.grupo ?? null };
       cur.ramos += r.ramos; cur.tallos += r.tallos; cur.total += r.total; cur.n += 1;
       m.set(key, cur);
     });
@@ -530,11 +530,11 @@ const Index = () => {
   }, [registros]);
 
   const acumuladosPerdidas = useMemo(() => {
-    const m = new Map<string, { fecha: string; cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; n: number }>();
+    const m = new Map<string, { fecha: string; cama: string; variedad: string; parcela: string; tratamiento: string; causa: string; tallos: number; n: number; grupo: number | null }>();
     perdidas.forEach((r) => {
       const fecha = (r.fecha || "").slice(0, 10);
-      const key = `${fecha}||${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}||${r.causa}`;
-      const cur = m.get(key) ?? { fecha, cama: r.cama, variedad: r.variedad, parcela: r.parcela, tratamiento: r.tratamiento, causa: r.causa, tallos: 0, n: 0 };
+      const key = `${fecha}||${r.cama}||${r.variedad}||${r.parcela}||${r.tratamiento}||${r.causa}||${r.grupo ?? ""}`;
+      const cur = m.get(key) ?? { fecha, cama: r.cama, variedad: r.variedad, parcela: r.parcela, tratamiento: r.tratamiento, causa: r.causa, tallos: 0, n: 0, grupo: r.grupo ?? null };
       cur.tallos += r.tallos; cur.n += 1;
       m.set(key, cur);
     });
@@ -600,7 +600,7 @@ const Index = () => {
       const { data: ins, error } = await supabase.from("productividad").insert({
         cama: g.cama, variedad: g.variedad, parcela: parseInt(g.parcela),
         tratamiento: g.tratamiento, tratamiento_id: tratId, ramos: r,
-        tallos_por_ramo: t, tallos_de_mas: extra,
+        tallos_por_ramo: t, tallos_de_mas: extra, grupo: i + 1,
         ensayo_id: ensayoId, sede_id: profile?.sede_id ?? null, bloque: bloqueRow,
       } as any).select("id").maybeSingle();
       if (error) throw error;
@@ -631,7 +631,7 @@ const Index = () => {
       const { data: ins, error } = await supabase.from("perdidas").insert({
         cama: g.cama, variedad: g.variedad, parcela: parseInt(g.parcela),
         tratamiento: g.tratamiento, tratamiento_id: tratIdP,
-        causa: g.causa, causa_id: causaIdP, tallos: t,
+        causa: g.causa, causa_id: causaIdP, tallos: t, grupo: i + 1,
         ensayo_id: ensayoId, sede_id: profile?.sede_id ?? null, bloque: bloqueRow, plantas_iniciales: plantasIni,
       } as any).select("id").maybeSingle();
       if (error) throw error;
@@ -666,7 +666,7 @@ const Index = () => {
         cama: g.cama, parcela: parseInt(g.parcela), tratamiento: g.tratamiento, tratamiento_id: tratIdT,
         numero, longitud_cm: lon, botones: bot,
         botones_piso2: esPisos ? bot2 : null,
-        piso: esPisos ? "pisos" : null,
+        piso: esPisos ? "pisos" : null, grupo: i + 1,
         ensayo_id: ensayoId, sede_id: profile?.sede_id ?? null, bloque: bloqueRow,
       } as any).select("id").maybeSingle();
       if (error) throw error;
@@ -696,7 +696,7 @@ const Index = () => {
       const tratIdR = findTratamiento(g.cama, g.tratamiento)?.id ?? null;
       const { data: ins, error } = await supabase.from("ramos_peso").insert({
         cama: g.cama, parcela: parseInt(g.parcela), tratamiento: g.tratamiento, tratamiento_id: tratIdR,
-        numero, tallos_por_ramo: tpr, peso_g: peso,
+        numero, tallos_por_ramo: tpr, peso_g: peso, grupo: i + 1,
         ensayo_id: ensayoId, sede_id: profile?.sede_id ?? null, bloque: bloqueRow,
       } as any).select("id").maybeSingle();
       if (error) throw error;
@@ -851,7 +851,7 @@ const Index = () => {
               {openSec.regProd && (acumulados.length === 0 ? <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div> : (
                 <div className="overflow-x-auto"><table className="w-full font-mono text-xs">
                   <thead className="bg-lapis text-background"><tr>
-                    <th className="text-left p-3 uppercase">Cama</th><th className="text-left p-3 uppercase">Variedad</th>
+                    <th className="text-left p-3 uppercase">Grupo</th><th className="text-left p-3 uppercase">Cama</th><th className="text-left p-3 uppercase">Variedad</th>
                     <th className="text-left p-3 uppercase">Parcela</th><th className="text-left p-3 uppercase">Tratamiento</th>
                     <th className="text-right p-3 uppercase">Registros</th><th className="text-right p-3 uppercase">Ramos</th><th className="text-right p-3 uppercase">Total tallos</th>
                   </tr></thead>
@@ -859,11 +859,12 @@ const Index = () => {
                     const out: JSX.Element[] = []; let last = "";
                     acumulados.forEach((a) => {
                       if (a.fecha !== last) {
-                        out.push(<tr key={`day-${a.fecha}`} className="bg-lapis/10"><td colSpan={7} className="p-2 font-bold text-lapis uppercase">📅 {fmtDay(a.fecha)}</td></tr>);
+                        out.push(<tr key={`day-${a.fecha}`} className="bg-lapis/10"><td colSpan={8} className="p-2 font-bold text-lapis uppercase">📅 {fmtDay(a.fecha)}</td></tr>);
                         last = a.fecha;
                       }
                       out.push(
-                        <tr key={`${a.fecha}-${a.cama}-${a.variedad}-${a.parcela}-${a.tratamiento}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                        <tr key={`${a.fecha}-${a.cama}-${a.variedad}-${a.parcela}-${a.tratamiento}-${a.grupo}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-accent-orange">{a.grupo != null ? `G${a.grupo}` : "—"}</td>
                           <td className="p-3 font-bold text-lapis">{a.cama}</td><td className="p-3 text-lapis">{a.variedad}</td>
                           <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td><td className="p-3 text-lapis">{a.tratamiento}</td>
                           <td className="p-3 text-right">{a.n}</td><td className="p-3 text-right">{a.ramos.toLocaleString("es")}</td>
@@ -891,7 +892,7 @@ const Index = () => {
               {openSec.regPerd && (acumuladosPerdidas.length === 0 ? <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div> : (
                 <div className="overflow-x-auto"><table className="w-full font-mono text-xs">
                   <thead className="bg-lapis text-background"><tr>
-                    <th className="text-left p-3 uppercase">Cama</th><th className="text-left p-3 uppercase">Variedad</th>
+                    <th className="text-left p-3 uppercase">Grupo</th><th className="text-left p-3 uppercase">Cama</th><th className="text-left p-3 uppercase">Variedad</th>
                     <th className="text-left p-3 uppercase">Parcela</th><th className="text-left p-3 uppercase">Tratamiento</th>
                     <th className="text-left p-3 uppercase">Causa</th><th className="text-right p-3 uppercase">Registros</th><th className="text-right p-3 uppercase">Total tallos</th>
                   </tr></thead>
@@ -899,11 +900,12 @@ const Index = () => {
                     const out: JSX.Element[] = []; let last = "";
                     acumuladosPerdidas.forEach((a) => {
                       if (a.fecha !== last) {
-                        out.push(<tr key={`day-${a.fecha}`} className="bg-lapis/10"><td colSpan={7} className="p-2 font-bold text-lapis uppercase">📅 {fmtDay(a.fecha)}</td></tr>);
+                        out.push(<tr key={`day-${a.fecha}`} className="bg-lapis/10"><td colSpan={8} className="p-2 font-bold text-lapis uppercase">📅 {fmtDay(a.fecha)}</td></tr>);
                         last = a.fecha;
                       }
                       out.push(
-                        <tr key={`${a.fecha}-${a.cama}-${a.variedad}-${a.parcela}-${a.tratamiento}-${a.causa}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                        <tr key={`${a.fecha}-${a.cama}-${a.variedad}-${a.parcela}-${a.tratamiento}-${a.causa}-${a.grupo}`} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-accent-orange">{a.grupo != null ? `G${a.grupo}` : "—"}</td>
                           <td className="p-3 font-bold text-lapis">{a.cama}</td><td className="p-3 text-lapis">{a.variedad}</td>
                           <td className="p-3 font-bold text-lapis">Parcela {a.parcela}</td><td className="p-3 text-lapis">{a.tratamiento}</td>
                           <td className="p-3 text-lapis">{a.causa}</td><td className="p-3 text-right">{a.n}</td>
@@ -931,7 +933,7 @@ const Index = () => {
               {openSec.regTallos && (tallos.length === 0 ? <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div> : (
                 <div className="overflow-x-auto"><table className="w-full font-mono text-xs">
                   <thead className="bg-lapis text-background"><tr>
-                    <th className="text-left p-3 uppercase">Cama</th><th className="text-left p-3 uppercase">Parcela</th>
+                    <th className="text-left p-3 uppercase">Grupo</th><th className="text-left p-3 uppercase">Cama</th><th className="text-left p-3 uppercase">Parcela</th>
                     <th className="text-left p-3 uppercase">Tratamiento</th><th className="text-right p-3 uppercase">Tallo #</th>
                     <th className="text-right p-3 uppercase">Longitud (cm)</th><th className="text-right p-3 uppercase">Puntos</th><th className="text-right p-3 uppercase">Piso 2</th>
                   </tr></thead>
@@ -945,11 +947,12 @@ const Index = () => {
                     sorted.forEach((t) => {
                       const d = dayOf(t.fecha);
                       if (d !== last) {
-                        out.push(<tr key={`day-${d}`} className="bg-lapis/10"><td colSpan={7} className="p-2 font-bold text-lapis uppercase">📅 {fmtDay(d)}</td></tr>);
+                        out.push(<tr key={`day-${d}`} className="bg-lapis/10"><td colSpan={8} className="p-2 font-bold text-lapis uppercase">📅 {fmtDay(d)}</td></tr>);
                         last = d;
                       }
                       out.push(
                         <tr key={t.id} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-accent-orange">{t.grupo != null ? `G${t.grupo}` : "—"}</td>
                           <td className="p-3 font-bold text-lapis">{t.cama}</td><td className="p-3 font-bold text-lapis">Parcela {t.parcela}</td>
                           <td className="p-3 text-lapis">{t.tratamiento}</td>
                           <td className="p-3 text-right text-accent-orange font-bold">Tallo {t.numero}</td>
@@ -979,7 +982,7 @@ const Index = () => {
               {openSec.regRamos && (ramosPeso.length === 0 ? <div className="p-8 font-mono text-xs text-muted-foreground">Sin registros aún.</div> : (
                 <div className="overflow-x-auto"><table className="w-full font-mono text-xs">
                   <thead className="bg-lapis text-background"><tr>
-                    <th className="text-left p-3 uppercase">Cama</th><th className="text-left p-3 uppercase">Parcela</th>
+                    <th className="text-left p-3 uppercase">Grupo</th><th className="text-left p-3 uppercase">Cama</th><th className="text-left p-3 uppercase">Parcela</th>
                     <th className="text-left p-3 uppercase">Tratamiento</th><th className="text-right p-3 uppercase">Ramo #</th>
                     <th className="text-right p-3 uppercase">Tallos/ramo</th><th className="text-right p-3 uppercase">Peso (g)</th><th className="text-right p-3 uppercase">Peso/tallo (g)</th>
                   </tr></thead>
@@ -993,11 +996,12 @@ const Index = () => {
                     sorted.forEach((r) => {
                       const d = dayOf(r.fecha);
                       if (d !== last) {
-                        out.push(<tr key={`day-${d}`} className="bg-lapis/10"><td colSpan={7} className="p-2 font-bold text-lapis uppercase">📅 {fmtDay(d)}</td></tr>);
+                        out.push(<tr key={`day-${d}`} className="bg-lapis/10"><td colSpan={8} className="p-2 font-bold text-lapis uppercase">📅 {fmtDay(d)}</td></tr>);
                         last = d;
                       }
                       out.push(
                         <tr key={r.id} className="border-b border-lapis/10 hover:bg-accent-orange/10">
+                          <td className="p-3 font-bold text-accent-orange">{r.grupo != null ? `G${r.grupo}` : "—"}</td>
                           <td className="p-3 font-bold text-lapis">{r.cama}</td><td className="p-3 font-bold text-lapis">Parcela {r.parcela}</td>
                           <td className="p-3 text-lapis">{r.tratamiento}</td>
                           <td className="p-3 text-right text-accent-orange font-bold">Ramo {r.numero}</td>
