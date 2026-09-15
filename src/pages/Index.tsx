@@ -228,10 +228,13 @@ const Index = () => {
   useEffect(() => {
     if (!ensayoId) return;
     load();
+    let t: ReturnType<typeof setTimeout>;
     const ch = supabase.channel("siembras-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "siembras" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "siembras" }, () => {
+        clearTimeout(t); t = setTimeout(() => load(), 1000);
+      })
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => { clearTimeout(t); supabase.removeChannel(ch); };
   }, [ensayoId]);
 
   const loadTratamientos = async () => {
@@ -264,11 +267,17 @@ const Index = () => {
     if (!ensayoId) return;
     loadTratamientos();
     loadCausas();
+    let tT: ReturnType<typeof setTimeout>;
+    let tC: ReturnType<typeof setTimeout>;
     const ch = supabase.channel("trat-causas-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tratamientos" }, () => loadTratamientos())
-      .on("postgres_changes", { event: "*", schema: "public", table: "causas" }, () => loadCausas())
+      .on("postgres_changes", { event: "*", schema: "public", table: "tratamientos" }, () => {
+        clearTimeout(tT); tT = setTimeout(() => loadTratamientos(), 800);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "causas" }, () => {
+        clearTimeout(tC); tC = setTimeout(() => loadCausas(), 800);
+      })
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => { clearTimeout(tT); clearTimeout(tC); supabase.removeChannel(ch); };
   }, [ensayoId]);
 
   const loadRegistros = async () => {
@@ -308,13 +317,15 @@ const Index = () => {
   useEffect(() => {
     if (!ensayoId) return;
     loadRegistros();
+    let tR: ReturnType<typeof setTimeout>;
+    const debounced = () => { clearTimeout(tR); tR = setTimeout(() => loadRegistros(), 1000); };
     const ch = supabase.channel("registros-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "productividad" }, () => loadRegistros())
-      .on("postgres_changes", { event: "*", schema: "public", table: "perdidas" }, () => loadRegistros())
-      .on("postgres_changes", { event: "*", schema: "public", table: "tallos" }, () => loadRegistros())
-      .on("postgres_changes", { event: "*", schema: "public", table: "ramos_peso" }, () => loadRegistros())
+      .on("postgres_changes", { event: "*", schema: "public", table: "productividad" }, debounced)
+      .on("postgres_changes", { event: "*", schema: "public", table: "perdidas" }, debounced)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tallos" }, debounced)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ramos_peso" }, debounced)
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => { clearTimeout(tR); supabase.removeChannel(ch); };
   }, [ensayoId]);
 
   const handleFile = async (file: File) => {
