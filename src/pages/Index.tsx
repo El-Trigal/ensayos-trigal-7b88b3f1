@@ -336,10 +336,11 @@ const Index = () => {
           fecha: parseExcelDate(norm.fecha),
           producto: norm.producto ? String(norm.producto) : null,
           nom_flor: String(norm.nom_flor ?? norm["nom flor"] ?? "").trim(),
-          plantas: parseInt(String(norm.plantas)) || 0,
-          ensayo_codigo: ensayoCodigo,
+          plantas: parseInt(String(norm.plantas ?? norm.total)) || 0,
+          ensayo_id: ensayoId,
+          sede_id: profile?.sede_id ?? null,
         };
-      }).filter((r) => !isNaN(r.bloque) && r.cm && r.nom_flor);
+      }).filter((r) => !isNaN(r.bloque) && r.cm);
 
       const chunkSize = 500;
       for (let i = 0; i < records.length; i += chunkSize) {
