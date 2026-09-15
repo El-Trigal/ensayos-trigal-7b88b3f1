@@ -594,12 +594,13 @@ const Index = () => {
     setSavingK(key, true);
     try {
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
+      const tratId = findTratamiento(g.cama, g.tratamiento)?.id ?? null;
       const { data: ins, error } = await supabase.from("productividad").insert({
-        cama: g.cama, variedad: g.variedad, parcela: g.parcela,
-        tratamiento: g.tratamiento, ramos: r,
+        cama: g.cama, variedad: g.variedad, parcela: parseInt(g.parcela),
+        tratamiento: g.tratamiento, tratamiento_id: tratId, ramos: r,
         tallos_por_ramo: t, tallos_de_mas: extra, total: r * t + extra,
         ensayo_id: ensayoId, sede_id: profile?.sede_id ?? null, bloque: bloqueRow,
-      }).select("id").maybeSingle();
+      } as any).select("id").maybeSingle();
       if (error) throw error;
       setProdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, ramos: "", tallos: "", extra: "" } : x));
       toast.success("Dato registrado correctamente");
@@ -623,11 +624,14 @@ const Index = () => {
     try {
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
       const plantasIni = plantasParaCausaIniciales(g.cama, g.tratamiento, g.parcela);
+      const tratIdP = findTratamiento(g.cama, g.tratamiento)?.id ?? null;
+      const causaIdP = causasPers.find((c) => c.nombre === g.causa)?.id ?? null;
       const { data: ins, error } = await supabase.from("perdidas").insert({
-        cama: g.cama, variedad: g.variedad, parcela: g.parcela,
-        tratamiento: g.tratamiento, causa: g.causa, tallos: t,
+        cama: g.cama, variedad: g.variedad, parcela: parseInt(g.parcela),
+        tratamiento: g.tratamiento, tratamiento_id: tratIdP,
+        causa: g.causa, causa_id: causaIdP, tallos: t,
         ensayo_id: ensayoId, sede_id: profile?.sede_id ?? null, bloque: bloqueRow, plantas_iniciales: plantasIni,
-      }).select("id").maybeSingle();
+      } as any).select("id").maybeSingle();
       if (error) throw error;
       setPerdGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, tallos: "" } : x));
       toast.success("Pérdida registrada correctamente");
@@ -655,13 +659,14 @@ const Index = () => {
     try {
       const numero = siguienteNumeroTallo(g.cama, g.parcela, g.tratamiento);
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
+      const tratIdT = findTratamiento(g.cama, g.tratamiento)?.id ?? null;
       const { data: ins, error } = await supabase.from("tallos").insert({
-        cama: g.cama, parcela: g.parcela, tratamiento: g.tratamiento,
+        cama: g.cama, parcela: parseInt(g.parcela), tratamiento: g.tratamiento, tratamiento_id: tratIdT,
         numero, longitud_cm: lon, botones: bot,
         botones_piso2: esPisos ? bot2 : null,
         piso: esPisos ? "pisos" : null,
         ensayo_id: ensayoId, sede_id: profile?.sede_id ?? null, bloque: bloqueRow,
-      }).select("id").maybeSingle();
+      } as any).select("id").maybeSingle();
       if (error) throw error;
       setTallosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, longitud: "", botones: "", puntos2: "" } : x));
       toast.success(`Tallo ${numero} registrado`);
@@ -686,11 +691,12 @@ const Index = () => {
     try {
       const numero = siguienteNumeroRamo(g.cama, g.parcela, g.tratamiento);
       const bloqueRow = data.find((d) => d.cm === g.cama)?.bloque ?? null;
+      const tratIdR = findTratamiento(g.cama, g.tratamiento)?.id ?? null;
       const { data: ins, error } = await supabase.from("ramos_peso").insert({
-        cama: g.cama, parcela: g.parcela, tratamiento: g.tratamiento,
+        cama: g.cama, parcela: parseInt(g.parcela), tratamiento: g.tratamiento, tratamiento_id: tratIdR,
         numero, tallos_por_ramo: tpr, peso_g: peso,
         ensayo_id: ensayoId, sede_id: profile?.sede_id ?? null, bloque: bloqueRow,
-      }).select("id").maybeSingle();
+      } as any).select("id").maybeSingle();
       if (error) throw error;
       setRamosGroups((prev) => prev.map((x, idx) => idx === i ? { ...x, tallosPorRamo: "", peso: "" } : x));
       toast.success(`Ramo ${numero} registrado`);
