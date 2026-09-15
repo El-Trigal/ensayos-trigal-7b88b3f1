@@ -600,7 +600,7 @@ const Index = () => {
       const { data: ins, error } = await supabase.from("productividad").insert({
         cama: g.cama, variedad: g.variedad, parcela: parseInt(g.parcela),
         tratamiento: g.tratamiento, tratamiento_id: tratId, ramos: r,
-        tallos_por_ramo: t, tallos_de_mas: extra, total: r * t + extra,
+        tallos_por_ramo: t, tallos_de_mas: extra,
         ensayo_id: ensayoId, sede_id: profile?.sede_id ?? null, bloque: bloqueRow,
       } as any).select("id").maybeSingle();
       if (error) throw error;
